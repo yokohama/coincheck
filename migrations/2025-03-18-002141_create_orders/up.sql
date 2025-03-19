@@ -1,0 +1,12 @@
+CREATE TABLE transactions (
+    id SERIAL PRIMARY KEY,
+    order_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    rate DOUBLE PRECISION NOT NULL,
+    amount DOUBLE PRECISION NOT NULL,
+    order_type VARCHAR(255) NOT NULL,
+    pair VARCHAR(255) NOT NULL,
+    price DOUBLE PRECISION NOT NULL,
+    fee_currency VARCHAR(255) NOT NULL,
+    fee DOUBLE PRECISION NOT NULL
+);
