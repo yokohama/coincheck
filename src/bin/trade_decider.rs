@@ -24,17 +24,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         match signal {
             TradeSignal::Buy => {
-                println!("buy: {}", currency);
+                api::slack::send_orderd_information(&currency, "buy", 1.1).await?;
             },
             TradeSignal::Sell => {
-                println!("sell: {}", currency);
+                api::slack::send_orderd_information(&currency, "sell", 1.1).await?;
             },
-            TradeSignal::Hold => {
-                println!("hold: {}", currency);
-            },
-            TradeSignal::InsufficientData => {
-                println!("insufficient data: {}", currency);
-            },
+            TradeSignal::Hold => {},
+            TradeSignal::InsufficientData => {},
         }
     };
 

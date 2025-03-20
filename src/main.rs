@@ -15,6 +15,9 @@ use api::coincheck::client::CoincheckClient;
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().expect(".env file not found");
 
+    api::slack::send_orderd_information("btc", "sell", 1.1).await?;
+    panic!("hoge");
+
     let client = CoincheckClient::new()?;
 
     // 所持している全部の通貨を取得
