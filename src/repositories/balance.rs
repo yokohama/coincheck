@@ -7,8 +7,8 @@ use crate::api::coincheck::client::CoincheckClient;
 
 pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<dyn Error>> {
 
-    let balances = coincheck::balance::find(&client).await?;
-    let my_currencies = balances
+    let balancies = coincheck::balance::find(&client).await?;
+    let currencies = balancies
         .as_object()
         .unwrap()
         .iter()
@@ -16,21 +16,43 @@ pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<
         .map(|(k, _)| k.to_string())
         .collect();
 
-    Ok(my_currencies)
+    Ok(currencies)
 }
 
-pub fn my_pairs(my_currencies: &Vec<String>) -> Vec<String> {
-    my_currencies
+pub async fn my_managed_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<dyn Error>> {
+
+    let balancies = coincheck::balance::find(&client).await?;
+    let currencies = balancies
+        .as_object()
+        .unwrap()
         .iter()
-        .filter(|c| !c.contains("jpy") && !c.contains("tsumitate"))
-        .cloned()
-        .collect()
+        .filter(|(_, v)| v.as_str().unwrap_or("0.0") != "0.0" )
+        .filter(|(k, _)| !k.contains("tumitate"))
+        .map(|(k, _)| k.to_string())
+        .collect();
+
+    Ok(currencies)
 }
 
-pub async fn my_balances(client: &CoincheckClient) -> Result<Value, Box<dyn Error>> {
+pub async fn my_trading_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<dyn Error>> {
+
+    let balancies = coincheck::balance::find(&client).await?;
+    let currencies = balancies
+        .as_object()
+        .unwrap()
+        .iter()
+        .filter(|(_, v)| v.as_str().unwrap_or("0.0") != "0.0" )
+        .filter(|(k, _)| !k.contains("tsumitate") && !k.contains("jpy"))
+        .map(|(k, _)| k.to_string())
+        .collect();
+
+    Ok(currencies)
+}
+
+pub async fn my_balancies(client: &CoincheckClient) -> Result<Value, Box<dyn Error>> {
 
     let balances = coincheck::balance::find(&client).await?;
-    let my_balances: serde_json::Map<String, Value> = balances
+    let my_balancies: serde_json::Map<String, Value> = balances
         .as_object()
         .unwrap()
         .iter()
@@ -42,5 +64,5 @@ pub async fn my_balances(client: &CoincheckClient) -> Result<Value, Box<dyn Erro
         })
         .collect();
 
-    Ok(Value::Object(my_balances))
+    Ok(Value::Object(my_balancies))
 }

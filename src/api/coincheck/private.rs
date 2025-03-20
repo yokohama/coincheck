@@ -16,7 +16,7 @@ pub fn headers(
 ) -> Result<HeaderMap, Box<dyn Error>> {
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)?
-        .as_secs()
+        .as_nanos()
         .to_string();
 
     let message = format!("{}{}", nonce, url);

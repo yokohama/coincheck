@@ -14,27 +14,11 @@ pub struct Summary {
     pub total_amount: f64, // 所持数
 }
 
-pub fn summary(conn: &mut PgConnection, currency: &str) -> Result<Summary, Box<dyn Error>> {
-    let pair_str = format!("{}_jpy", currency);
-
-    let buy = transactions
+pub fn total_invested(conn: &mut PgConnection) -> Result<f64, Box<dyn Error>> {
+    let invested: Option<f64> = transactions
         .filter(order_type.eq("buy"))
-        .filter(pair.eq(&pair_str))
-        .select((sum(price), sum(amount)))
-        .first::<(Option<f64>, Option<f64>)>(conn)?;
+        .select(sum(price))
+        .first(conn)?;
 
-    let sell = transactions
-        .filter(order_type.eq("sell"))
-        .filter(pair.eq(&pair_str))
-        .select((sum(price), sum(amount)))
-        .first::<(Option<f64>, Option<f64>)>(conn)?;
-
-    let buy_amount = buy.1.unwrap_or(0.0);
-    let sell_amount = sell.1.unwrap_or(0.0);
-
-    Ok(Summary {
-        currency: currency.to_string(),
-        total_invested: buy.0.unwrap_or(0.0),
-        total_amount: buy_amount - sell_amount,
-    })
+    Ok(invested.unwrap_or(0.0))
 }

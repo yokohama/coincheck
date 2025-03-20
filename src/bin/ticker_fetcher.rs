@@ -5,7 +5,6 @@ use tokio;
 
 use coincheck::db::establish_connection;
 use coincheck::api;
-use coincheck::models;
 use coincheck::repositories;
 
 #[tokio::main]
@@ -16,14 +15,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut conn = pool.get().expect("Failed to get DB connection");
     let client = api::coincheck::client::CoincheckClient::new()?;
 
-    let my_currencies = repositories::balance::my_currencies(&client).await?;
-    let my_pairs = repositories::balance::my_pairs(&my_currencies);
+    let my_trading_currencies = repositories::balance::my_trading_currencies(&client).await?;
 
-    // tickerを更新
-    for currency in my_pairs.iter() {
+    for currency in my_trading_currencies.iter() {
         let mut new_ticker = api::coincheck::ticker::find(&client, &currency).await?;
         new_ticker.pair = Some(currency.to_string());
-        models::ticker::Ticker::create(&mut conn, new_ticker)?;
+        repositories::ticker::create(&mut conn, new_ticker)?;
     };
 
     Ok(())

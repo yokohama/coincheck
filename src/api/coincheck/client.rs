@@ -2,6 +2,7 @@ use std::env;
 use std::error::Error;
 use reqwest::Client;
 
+#[derive(Debug)]
 #[allow(dead_code)]
 pub struct CoincheckClient {
     pub base_url: String,

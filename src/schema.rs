@@ -14,6 +14,29 @@ diesel::table! {
 }
 
 diesel::table! {
+    summaries (id) {
+        id -> Int4,
+        total_invested -> Float8,
+        total_jpy_value -> Float8,
+        pl -> Float8,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    summary_records (id) {
+        id -> Int4,
+        summary_id -> Int4,
+        #[max_length = 255]
+        currency -> Varchar,
+        amount -> Float8,
+        rate -> Float8,
+        jpy_value -> Float8,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     tickers (id) {
         id -> Int4,
         pair -> Text,
@@ -47,6 +70,8 @@ diesel::table! {
 
 diesel::allow_tables_to_appear_in_same_query!(
     orders,
+    summaries,
+    summary_records,
     tickers,
     transactions,
 );

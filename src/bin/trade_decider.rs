@@ -1,4 +1,5 @@
 use std::error::Error;
+use coincheck::repositories::ticker::TradeSignal;
 
 use tokio;
 
@@ -13,14 +14,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut conn = pool.get().expect("Failed to get DB connection");
     let client = api::coincheck::client::CoincheckClient::new()?;
 
-    let my_currencies = repositories::balance::my_currencies(&client).await?;
-    let my_pairs = repositories::balance::my_pairs(&my_currencies);
+    let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
 
-    for currency in my_pairs.iter() {
-        let signal = repositories::ticker::determine_trade_signal(&mut conn, currency).unwrap();
-        println!("{}: {:?}", currency, signal);
+    for currency in my_trading_currency.iter() {
+        let signal = repositories::ticker::determine_trade_signal(
+            &mut conn, 
+            currency
+        ).unwrap();
+
+        match signal {
+            TradeSignal::Buy => {
+                println!("buy: {}", currency);
+            },
+            TradeSignal::Sell => {
+                println!("sell: {}", currency);
+            },
+            TradeSignal::Hold => {
+                println!("hold: {}", currency);
+            },
+            TradeSignal::InsufficientData => {
+                println!("insufficient data: {}", currency);
+            },
+        }
     };
-    println!("");
 
     Ok(())
 }
