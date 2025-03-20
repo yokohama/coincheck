@@ -29,8 +29,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
             TradeSignal::Sell => {
                 api::slack::send_orderd_information(&currency, "sell", 1.1).await?;
             },
-            TradeSignal::Hold => {},
-            TradeSignal::InsufficientData => {},
+            TradeSignal::Hold => {
+                api::slack::send_orderd_information(&currency, "hold", 0.0).await?;
+            },
+            TradeSignal::InsufficientData => {
+                api::slack::send_orderd_information(&currency, "insufficient data", 0.0).await?;
+            },
         }
     };
 
