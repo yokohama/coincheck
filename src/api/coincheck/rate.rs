@@ -4,7 +4,7 @@ use serde::Deserialize;
 use crate::api::coincheck::client::CoincheckClient;
 use crate::error::AppError;
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub struct FetchRate {
     pub rate: String,
 }
@@ -15,7 +15,7 @@ impl FetchRate {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[allow(dead_code)]
 pub struct Rate {
     pub currency: String,

@@ -8,7 +8,6 @@ use diesel::QueryableByName;
 use crate::error::AppError;
 use crate::models;
 
-#[derive(Debug)]
 pub enum TradeSignal {
     Buy,
     Sell,
@@ -16,7 +15,7 @@ pub enum TradeSignal {
     InsufficientData,
 }
 
-#[derive(Debug, QueryableByName)]
+#[derive(QueryableByName)]
 pub struct AvgResult {
     #[diesel(sql_type = Nullable<Double>)]
     avg: Option<f64>,
