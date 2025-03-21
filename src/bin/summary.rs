@@ -71,8 +71,9 @@ async fn run() -> Result<(), AppError> {
         pl,
     };
 
-    repositories::summary::create(&mut conn, new_summary, new_summary_records)?;
+    repositories::summary::create(&mut conn, &new_summary, new_summary_records)?;
 
+    api::slack::send_summary(new_summary).await?;
     info!("Execute summary successful.");
 
     Ok(())

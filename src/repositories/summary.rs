@@ -5,7 +5,7 @@ use crate::error::AppError;
 
 pub fn create(
     conn: &mut PgConnection, 
-    new_summary: models::summary::NewSummary,
+    new_summary: &models::summary::NewSummary,
     new_summary_records: Vec<models::summary_record::NewSummaryRecord>,
 ) -> Result<(), AppError> {
 

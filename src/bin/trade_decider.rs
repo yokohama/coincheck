@@ -9,6 +9,7 @@ use coincheck::db::establish_connection;
 use coincheck::repositories;
 use coincheck::api;
 use coincheck::repositories::ticker::TradeSignal;
+use coincheck::models::order::NewOrder;
 
 #[tokio::main]
 async fn main() {
@@ -28,6 +29,7 @@ async fn run() -> Result<(), AppError> {
 
     let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
 
+    let mut new_orders: Vec<NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
         let signal = repositories::ticker::determine_trade_signal(
             &mut conn, 
@@ -36,19 +38,25 @@ async fn run() -> Result<(), AppError> {
 
         match signal {
             TradeSignal::Buy => {
-                api::slack::send_orderd_information(&currency, "buy", 1.1).await?;
+                new_orders.push(NewOrder {
+                    currency: currency.clone(),
+                    ops: "buy".to_string(),
+                    amount: 1.1,
+                });
             },
             TradeSignal::Sell => {
-                api::slack::send_orderd_information(&currency, "sell", 1.1).await?;
+                new_orders.push(NewOrder {
+                    currency: currency.clone(),
+                    ops: "sell".to_string(),
+                    amount: 1.1,
+                });
             },
-            TradeSignal::Hold => {
-                api::slack::send_orderd_information(&currency, "hold", 0.0).await?;
-            },
-            TradeSignal::InsufficientData => {
-                api::slack::send_orderd_information(&currency, "insufficient data", 0.0).await?;
-            },
+            TradeSignal::Hold => {},
+            TradeSignal::InsufficientData => {},
         }
     };
+
+    api::slack::send_orderd_information(new_orders).await?;
 
     info!("Execute trade_decider successful.");
 

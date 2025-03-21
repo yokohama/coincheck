@@ -22,12 +22,12 @@ impl Summary {
     #[allow(dead_code)]
     pub fn create(
         conn: &mut PgConnection, 
-        new_summary: NewSummary,
+        new_summary: &NewSummary,
         mut new_summary_records: Vec<NewSummaryRecord>,
     ) -> Result<(), AppError> {
 
         let inserted: Summary = diesel::insert_into(summaries)
-            .values(&new_summary)
+            .values(new_summary)
             .get_result(conn)?;
 
         for record in new_summary_records.iter_mut() {
