@@ -16,8 +16,6 @@ use repositories::balance;
 async fn main() -> Result<(), AppError> {
     dotenv().expect(".env file not found");
 
-    api::slack::send_orderd_information("btc", "sell", 1.1).await?;
-
     let client = CoincheckClient::new()?;
 
     // 所持している全部の通貨を取得
