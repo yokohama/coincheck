@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::api::coincheck;
+use crate::api::coincheck::{self, balance};
 use crate::api::coincheck::client::CoincheckClient;
 use crate::error::AppError;
 
@@ -64,4 +64,20 @@ pub async fn my_balancies(client: &CoincheckClient) -> Result<Value, AppError> {
         .collect();
 
     Ok(Value::Object(my_balancies))
+}
+
+pub fn get_jpy_balance(balancies: &Value) -> Result<f64, AppError> {
+    if let Some(jpy) = balancies.get("jpy") {
+        Ok(jpy.as_f64().unwrap_or(0.0))
+    } else {
+        Ok(0.0)
+    }
+}
+
+pub fn get_crypto_balance(balancies: &Value, currency: &str) -> Result<f64, AppError> {
+    if let Some(crypto) = balancies.get(currency) {
+        Ok(crypto.as_f64().unwrap_or(0.0))
+    } else {
+        Ok(0.0)
+    }
 }

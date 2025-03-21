@@ -8,9 +8,8 @@ use tokio;
 
 use coincheck::error::AppError;
 use coincheck::db::establish_connection;
-use coincheck::repositories;
 use coincheck::api;
-use coincheck::repositories::ticker::TradeSignal;
+use coincheck::repositories::{self, ticker::TradeSignal};
 use coincheck::models::order::NewOrder;
 
 #[tokio::main]
@@ -24,36 +23,48 @@ async fn main() {
 }
 
 async fn run() -> Result<(), AppError> {
-
     let pool = establish_connection();
     let mut conn = pool.get().expect("Failed to get DB connection");
     let client = api::coincheck::client::CoincheckClient::new()?;
 
+    let balancies = repositories::balance::my_balancies(&client).await?;
+    thread::sleep(Duration::from_millis(500));
+
     let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
+    thread::sleep(Duration::from_millis(500));
+
+    let jpy_balance = repositories::balance::get_jpy_balance(&balancies)?;
 
     let mut new_orders: Vec<NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
+        let ticker = api::coincheck::ticker::find(&client, &currency).await?;
+        thread::sleep(Duration::from_millis(500));
+
         let signal = repositories::ticker::determine_trade_signal(
             &mut conn, 
-            currency
-        ).unwrap();
+            currency,
+            ticker.bid,
+            ticker.ask,
+            jpy_balance,
+            repositories::balance::get_crypto_balance(&balancies, &currency)?,
+        ).map_err(|e| AppError::InvalidData(format!("{}", e)))?;
 
         match signal {
-            TradeSignal::Buy => {
+            TradeSignal::Buy(amount) => {
                 let new_order = NewOrder {
                     rate: Some(0.0),
                     pair: currency.clone(),
                     order_type: "buy".to_string(),
-                    amount: 1.1,
+                    amount,
                 };
                 new_orders.push(new_order);
             },
-            TradeSignal::Sell => {
+            TradeSignal::Sell(amount) => {
                 let new_order = NewOrder {
                     rate: Some(0.0),
                     pair: currency.clone(),
                     order_type: "sell".to_string(),
-                    amount: 1.1,
+                    amount,
                 };
                 new_orders.push(new_order);
             },
@@ -61,6 +72,8 @@ async fn run() -> Result<(), AppError> {
             TradeSignal::InsufficientData => {},
         }
     };
+
+    info!("{:#?}", new_orders);
 
     for new_order in new_orders.iter() {
         repositories::order::create(&mut conn, new_order.clone())?;

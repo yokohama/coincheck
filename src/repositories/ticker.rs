@@ -9,8 +9,8 @@ use crate::error::AppError;
 use crate::models;
 
 pub enum TradeSignal {
-    Buy,
-    Sell,
+    Buy(f64),  //f64: buy amount
+    Sell(f64), //f64: sell amount
     Hold,
     InsufficientData,
 }
@@ -25,29 +25,34 @@ pub fn create(
     conn: &mut PgConnection, 
     new_ticker: models::ticker::NewTicker
 ) -> Result<(), AppError> {
-
     models::ticker::Ticker::create(conn, new_ticker)
 }
 
 pub fn determine_trade_signal(
     conn: &mut PgConnection,
     currency: &str,
+    current_bid: f64,
+    current_ask: f64,
+    jpy_balance: f64,
+    crypto_balance: f64,
 ) -> Result<TradeSignal, AppError> {
-
     dotenv().ok();
 
-    let sma_short = env::var("MA_SHORT")?
-        .parse::<i32>()
+    let sma_short = env::var("MA_SHORT")?.parse::<i32>()
         .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-    let sma_long = env::var("MA_LONG")?
-        .parse::<i32>()
+
+    let sma_long = env::var("MA_LONG")?.parse::<i32>()
         .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-    let ma_crossover_buy_threshold = env::var("MA_CROSSOVER_BUY_THRESHOLD")?
-        .parse::<f64>()
-        .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-    let ma_crossover_sell_threshold = env::var("MA_CROSSOVER_SELL_THRESHOLD")?
-        .parse::<f64>()
-        .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
+
+    
+    let spred_threshold = env::var("SPREAD_THRESHOLD")?.parse::<f64>()
+        .unwrap_or(1.0);
+
+    let buy_ratio = env::var("BUY_RATIO")?.parse::<f64>()
+        .unwrap_or(0.3);
+
+    let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>()
+        .unwrap_or(0.5);
 
     let periods = vec![sma_short, sma_long];
     let mut results: Vec<Option<AvgResult>> = Vec::new();
@@ -74,12 +79,20 @@ pub fn determine_trade_signal(
     let ma_short_avg = results[0].as_ref().map(|r| r.avg).flatten();
     let ma_long_avg = results[1].as_ref().map(|r| r.avg).flatten();
 
+    let spread_rate = ((current_ask - current_bid) / current_bid) * 100.0;
+    if spread_rate > spred_threshold {
+        // スプレッド負けするので見送り。
+        return Ok(TradeSignal::Hold);
+    }
+
     match (ma_short_avg, ma_long_avg) {
         (Some(short_avg), Some(long_avg)) => {
-            if short_avg > long_avg * ma_crossover_buy_threshold {
-                Ok(TradeSignal::Buy) // ゴールデンクロス
-            } else if short_avg < long_avg * ma_crossover_sell_threshold {
-                Ok(TradeSignal::Sell) // デッドクロス
+            if short_avg > long_avg {
+                let amount = (jpy_balance * buy_ratio) / current_ask;
+                Ok(TradeSignal::Buy(amount)) // ゴールデンクロス
+            } else if short_avg < long_avg {
+                let amount = crypto_balance * sell_ratio;
+                Ok(TradeSignal::Sell(amount)) // デッドクロス
             } else {
                 Ok(TradeSignal::Hold)
             }
