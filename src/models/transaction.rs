@@ -1,9 +1,8 @@
-use std::error::Error;
-
 use diesel::prelude::*;
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDateTime;
 
+use crate::error::AppError;
 use crate::schema::transactions;
 use crate::schema::transactions::dsl::*;
 use crate::models::util::{
@@ -30,7 +29,7 @@ pub struct Transaction {
 
 impl Transaction {
     #[allow(dead_code)]
-    pub fn create(conn: &mut PgConnection, new_order: NewTransaction) -> Result<(), Box<dyn Error>> {
+    pub fn create(conn: &mut PgConnection, new_order: NewTransaction) -> Result<(), AppError> {
         diesel::insert_into(transactions)
             .values(&new_order)
             .execute(conn)?;

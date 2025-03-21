@@ -3,20 +3,20 @@ mod models;
 mod repositories;
 mod api;
 mod schema;
+mod error;
 
-use std::error::Error;
 use dotenvy::dotenv;
 
 use tokio;
 
+use error::AppError;
 use api::coincheck::client::CoincheckClient;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), AppError> {
     dotenv().expect(".env file not found");
 
     api::slack::send_orderd_information("btc", "sell", 1.1).await?;
-    panic!("hoge");
 
     let client = CoincheckClient::new()?;
 
@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn print_my_balances(client: &CoincheckClient) -> Result<(), Box<dyn Error>> {
+async fn print_my_balances(client: &CoincheckClient) -> Result<(), AppError> {
     println!("#-- 通貨保有量 ");
     let my_balances = repositories::balance::my_balancies(&client).await?;
     println!("{:#?}", my_balances);

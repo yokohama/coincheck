@@ -1,15 +1,16 @@
-use std::error::Error;
 use std::env;
 use dotenvy::dotenv;
 
 use reqwest::Client;
 use serde_json::json;
 
+use crate::error::AppError;
+
 pub async fn send_orderd_information(
     currency: &str, 
     ops: &str,  // Buy or Sell
     amount: f64
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), AppError> {
     dotenv().ok();
 
     let url = env::var("SLACK_INCOMMING_WEBHOOK_URL")?;

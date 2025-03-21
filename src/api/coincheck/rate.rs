@@ -1,9 +1,8 @@
-use std::error::Error;
-
 use reqwest;
 use serde::Deserialize;
 
 use crate::api::coincheck::client::CoincheckClient;
+use crate::error::AppError;
 
 #[derive(Debug, Deserialize)]
 pub struct FetchRate {
@@ -11,8 +10,8 @@ pub struct FetchRate {
 }
 
 impl FetchRate {
-    pub fn to_f64(&self) -> Result<f64, Box<dyn Error>> {
-        self.rate.parse::<f64>().map_err(|e| e.into())
+    pub fn to_f64(&self) -> Result<f64, AppError> {
+        self.rate.parse::<f64>().map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))
     }
 }
 
@@ -25,7 +24,7 @@ pub struct Rate {
     pub spread_ratio: f64,
 }
 
-pub async fn find(client: &CoincheckClient, currency: &str) -> Result<Rate, Box<dyn Error>> {
+pub async fn find(client: &CoincheckClient, currency: &str) -> Result<Rate, AppError> {
     let buy_endpoint = format!(
         "{}/api/exchange/orders/rate?pair={}_jpy&order_type=buy&amount=1", 
         client.base_url, 

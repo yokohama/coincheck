@@ -1,7 +1,8 @@
-use std::error::Error;
 use std::thread;
 use std::time::Duration;
 use dotenvy::dotenv;
+use log::{info, error};
+use simplelog::{Config, LevelFilter, SimpleLogger};
 
 use tokio;
 
@@ -10,32 +11,22 @@ use coincheck::{
     repositories,
     models,
     db::establish_connection,
+    error::AppError,
 };
 
-/*
-#[derive(Debug)]
-struct Summary {
-    total_invested: f64,
-    total_jpy_value: f64,
-    pl: f64,
-    records: Vec<Record>,
-}
-
-#[derive(Debug)]
-struct Record {
-    currency: String,
-    amount: f64,
-    rate: f64,
-    jpy_value: f64,
-}
-*/
-
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() {
     dotenv().ok();
+    SimpleLogger::init(LevelFilter::Info, Config::default()).unwrap();
 
+    if let Err(e) = run().await {
+        error!("Error occurred: {}", e);
+    }
+}
+
+async fn run() -> Result<(), AppError> {
     let pool = establish_connection();
-    let mut conn = pool.get().expect("Failed to get DB connection");
+    let mut conn = pool.get()?;
     let client = api::coincheck::client::CoincheckClient::new()?;
 
     let my_balancies = repositories::balance::my_balancies(&client).await?;
@@ -80,9 +71,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         pl,
     };
 
-    println!("{:#?}", new_summary);
-
     repositories::summary::create(&mut conn, new_summary, new_summary_records)?;
+
+    info!("Execute summary successful.");
 
     Ok(())
 }

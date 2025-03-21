@@ -1,14 +1,26 @@
-use std::error::Error;
-use coincheck::repositories::ticker::TradeSignal;
+use dotenvy::dotenv;
 
+use log::{info, error};
+use simplelog::{Config, LevelFilter, SimpleLogger};
 use tokio;
 
+use coincheck::error::AppError;
 use coincheck::db::establish_connection;
 use coincheck::repositories;
 use coincheck::api;
+use coincheck::repositories::ticker::TradeSignal;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() {
+    dotenv().ok();
+    SimpleLogger::init(LevelFilter::Info, Config::default()).unwrap();
+
+    if let Err(e) = run().await {
+        error!("Error occurred: {}", e);
+    }
+}
+
+async fn run() -> Result<(), AppError> {
 
     let pool = establish_connection();
     let mut conn = pool.get().expect("Failed to get DB connection");
@@ -37,6 +49,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             },
         }
     };
+
+    info!("Execute trade_decider successful.");
 
     Ok(())
 }

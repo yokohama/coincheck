@@ -1,14 +1,13 @@
-use std::error::Error;
-
 use reqwest::Client;
 
+use crate::error::AppError;
 use crate::api::coincheck::client::CoincheckClient;
 use crate::models::ticker::NewTicker;
 
 pub async fn find(
     coincheck_client: &CoincheckClient,
     currency: &str,
-) -> Result<NewTicker, Box<dyn Error>> {
+) -> Result<NewTicker, AppError> {
 
     let path = format!("/api/ticker?pair={}_jpy", currency);
     let endpoint = format!("{}{}", coincheck_client.base_url, path);

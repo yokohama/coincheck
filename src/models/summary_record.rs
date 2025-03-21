@@ -1,9 +1,8 @@
-use std::error::Error;
-
 use diesel::prelude::*;
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDateTime;
 
+use crate::error::AppError;
 use crate::schema::summary_records;
 use crate::schema::summary_records::dsl::*;
 
@@ -25,7 +24,7 @@ impl SummaryRecord {
     pub fn create(
         conn: &mut PgConnection, 
         new_summary_record: NewSummaryRecord
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(), AppError> {
         diesel::insert_into(summary_records)
             .values(&new_summary_record)
             .execute(conn)?;

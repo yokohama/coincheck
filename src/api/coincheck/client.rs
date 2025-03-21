@@ -1,6 +1,7 @@
 use std::env;
-use std::error::Error;
 use reqwest::Client;
+
+use crate::error::AppError;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -12,7 +13,7 @@ pub struct CoincheckClient {
 }
 
 impl CoincheckClient {
-    pub fn new() -> Result<Self, Box<dyn Error>> {
+    pub fn new() -> Result<Self, AppError> {
         let base_url = env::var("COINCHECK_BASE_URL")?;
         let access_key = env::var("COINCHECK_ACCESS_KEY")?;
         let secret_key = env::var("COINCHECK_SECRET_ACCESS_KEY")?;

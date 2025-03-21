@@ -1,11 +1,10 @@
-use std::error::Error;
-
 use serde_json::Value;
 
 use crate::api::coincheck;
 use crate::api::coincheck::client::CoincheckClient;
+use crate::error::AppError;
 
-pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<dyn Error>> {
+pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppError> {
 
     let balancies = coincheck::balance::find(&client).await?;
     let currencies = balancies
@@ -19,7 +18,7 @@ pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<
     Ok(currencies)
 }
 
-pub async fn my_managed_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<dyn Error>> {
+pub async fn my_managed_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppError> {
 
     let balancies = coincheck::balance::find(&client).await?;
     let currencies = balancies
@@ -34,7 +33,7 @@ pub async fn my_managed_currencies(client: &CoincheckClient) -> Result<Vec<Strin
     Ok(currencies)
 }
 
-pub async fn my_trading_currencies(client: &CoincheckClient) -> Result<Vec<String>, Box<dyn Error>> {
+pub async fn my_trading_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppError> {
 
     let balancies = coincheck::balance::find(&client).await?;
     let currencies = balancies
@@ -49,7 +48,7 @@ pub async fn my_trading_currencies(client: &CoincheckClient) -> Result<Vec<Strin
     Ok(currencies)
 }
 
-pub async fn my_balancies(client: &CoincheckClient) -> Result<Value, Box<dyn Error>> {
+pub async fn my_balancies(client: &CoincheckClient) -> Result<Value, AppError> {
 
     let balances = coincheck::balance::find(&client).await?;
     let my_balancies: serde_json::Map<String, Value> = balances

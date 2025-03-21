@@ -1,9 +1,8 @@
-use std::error::Error;
-
 use diesel::prelude::*;
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDateTime;
 
+use crate::error::AppError;
 use crate::schema::tickers;
 use crate::schema::tickers::dsl::*;
 use crate::models::util::{
@@ -27,7 +26,7 @@ pub struct Ticker {
 
 impl Ticker {
     #[allow(dead_code)]
-    pub fn create(conn: &mut PgConnection, new_ticker: NewTicker) -> Result<(), Box<dyn Error>> {
+    pub fn create(conn: &mut PgConnection, new_ticker: NewTicker) -> Result<(), AppError> {
         diesel::insert_into(tickers)
             .values(&new_ticker)
             .execute(conn)?;
