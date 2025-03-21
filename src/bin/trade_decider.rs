@@ -76,7 +76,11 @@ async fn run() -> Result<(), AppError> {
     info!("{:#?}", new_orders);
 
     for new_order in new_orders.iter() {
-        repositories::order::create(&mut conn, new_order.clone())?;
+        repositories::order::post_market_order(
+            &mut conn,
+            &client,
+            new_order.clone()
+        ).await?;
         thread::sleep(Duration::from_millis(500));
     }
 
