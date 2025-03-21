@@ -1,4 +1,6 @@
 use dotenvy::dotenv;
+use std::thread;
+use std::time::Duration;
 
 use log::{info, error};
 use simplelog::{Config, LevelFilter, SimpleLogger};
@@ -38,23 +40,32 @@ async fn run() -> Result<(), AppError> {
 
         match signal {
             TradeSignal::Buy => {
-                new_orders.push(NewOrder {
-                    currency: currency.clone(),
-                    ops: "buy".to_string(),
+                let new_order = NewOrder {
+                    rate: Some(0.0),
+                    pair: currency.clone(),
+                    order_type: "buy".to_string(),
                     amount: 1.1,
-                });
+                };
+                new_orders.push(new_order);
             },
             TradeSignal::Sell => {
-                new_orders.push(NewOrder {
-                    currency: currency.clone(),
-                    ops: "sell".to_string(),
+                let new_order = NewOrder {
+                    rate: Some(0.0),
+                    pair: currency.clone(),
+                    order_type: "sell".to_string(),
                     amount: 1.1,
-                });
+                };
+                new_orders.push(new_order);
             },
             TradeSignal::Hold => {},
             TradeSignal::InsufficientData => {},
         }
     };
+
+    for new_order in new_orders.iter() {
+        repositories::order::create(&mut conn, new_order.clone())?;
+        thread::sleep(Duration::from_millis(500));
+    }
 
     api::slack::send_orderd_information(new_orders).await?;
 

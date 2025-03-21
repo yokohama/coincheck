@@ -39,20 +39,20 @@ pub async fn send_orderd_information(new_orders: Vec<NewOrder>) -> Result<(), Ap
 
 fn make_orderd_information_field(new_order: NewOrder) -> serde_json::Value {
     json!({
-   		"type": "section",
-   		"fields": [
-   			{
-   				"type": "mrkdwn",
-   				"text": format!("*通貨:* {}", new_order.currency)
-   			},
-   			{
-   				"type": "mrkdwn",
-   				"text": format!("*オペレーション:* {}", new_order.ops)
-   			},
-   			{
-   				"type": "mrkdwn",
-   				"text": format!("*Amount:* {}", new_order.amount)
-  			},
+        "type": "section",
+        "fields": [
+             {
+               "type": "mrkdwn",
+               "text": format!("*通貨:* {}", new_order.pair)
+             },
+             {
+                 "type": "mrkdwn",
+                 "text": format!("*オペレーション:* {}", new_order.order_type)
+             },
+             {
+                 "type": "mrkdwn",
+                 "text": format!("*Amount:* {}", new_order.amount)
+             },
         ]
     })
 }
