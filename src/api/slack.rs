@@ -1,6 +1,8 @@
 use std::env;
 use dotenvy::dotenv;
 
+use log::info;
+
 use reqwest::Client;
 use serde_json::json;
 
@@ -38,7 +40,8 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
 
     });
 
-    client.post(url).json(&payload).send().await?;
+    let res = client.post(url).json(&payload).send().await?;
+    info!("Order slack response debug: status={}, body={}", res.status(), res.text().await?);
 
     Ok(())
 }
