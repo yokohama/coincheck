@@ -7,11 +7,11 @@ use simplelog::{Config, LevelFilter, SimpleLogger};
 use tokio;
 
 use coincheck::{
-    api, 
-    repositories,
-    models,
+    api,
     db::establish_connection,
     error::AppError,
+    models,
+    repositories,
 };
 
 #[tokio::main]
@@ -33,7 +33,7 @@ async fn run() -> Result<(), AppError> {
     let my_trading_currencies = repositories::balance::my_trading_currencies(&client).await?;
 
     let mut new_summary_records: Vec<models::summary_record::NewSummaryRecord> = Vec::new();
-    let mut total_jpy_value: f64 = 0.0;
+    let mut total_jpy_value: f64 = my_balancies.get("jpy").unwrap().as_f64().unwrap_or(0.0);
 
     if let Some(balances) = my_balancies.as_object() {
         for currency in my_trading_currencies.iter() {
