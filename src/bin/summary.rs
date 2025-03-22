@@ -41,7 +41,6 @@ async fn run() -> Result<(), AppError> {
 
                 let rate = api::coincheck::rate::find(&client, &currency).await?;
                 let jpy_value = amount * rate.sell_rate;
-                thread::sleep(Duration::from_millis(500));
 
                 new_summary_records.push(models::summary_record::NewSummaryRecord {
                     summary_id: None,

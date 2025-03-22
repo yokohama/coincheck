@@ -1,4 +1,9 @@
+use std::thread;
+use std::time::Duration;
+
 use std::env;
+use dotenvy::dotenv;
+
 use reqwest::Client;
 
 use crate::error::AppError;
@@ -25,4 +30,16 @@ impl CoincheckClient {
             client: Client::new(),
         })
     }
+}
+
+pub fn sleep() -> Result<(), AppError> {
+    dotenv().ok();
+
+    let millis = env::var("COINCHECK_API_SLEEP_MILLIS")?
+        .parse::<u64>()
+        .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
+
+    thread::sleep(Duration::from_millis(millis));
+
+    Ok(())
 }

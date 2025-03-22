@@ -1,11 +1,10 @@
 use reqwest::Client;
 use serde::Serialize;
-
 use log::{info, error};
 
 use crate::error::AppError;
 use crate::api::coincheck::{
-    client::CoincheckClient,
+    client,
     private,
 };
 
@@ -25,7 +24,7 @@ pub enum MarketOrderRequest {
 }
 
 pub async fn post_market_order(
-    coincheck_client: &CoincheckClient,
+    coincheck_client: &client::CoincheckClient,
     currency: &str,
     order_type: &str,
     amount: f64,
@@ -66,5 +65,6 @@ pub async fn post_market_order(
         error!("Status {}: {}", status, text);
     }
 
+    client::sleep()?;
     Ok(status)
 }

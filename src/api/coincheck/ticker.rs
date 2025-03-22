@@ -1,13 +1,16 @@
+use dotenvy::dotenv;
+
 use reqwest::Client;
 
 use crate::error::AppError;
-use crate::api::coincheck::client::CoincheckClient;
+use crate::api::coincheck::client;
 use crate::models::ticker::NewTicker;
 
 pub async fn find(
-    coincheck_client: &CoincheckClient,
+    coincheck_client: &client::CoincheckClient,
     currency: &str,
 ) -> Result<NewTicker, AppError> {
+    dotenv().ok();
 
     let path = format!("/api/ticker?pair={}_jpy", currency);
     let endpoint = format!("{}{}", coincheck_client.base_url, path);
@@ -19,5 +22,6 @@ pub async fn find(
         .json::<NewTicker>()
         .await?;
 
+    client::sleep()?;
     Ok(ticker)
 }

@@ -2,7 +2,7 @@ use dotenvy::dotenv;
 use std::thread;
 use std::time::Duration;
 
-use log::{info, error};
+use log::error;
 use simplelog::{Config, LevelFilter, SimpleLogger};
 use tokio;
 
@@ -28,11 +28,7 @@ async fn run() -> Result<(), AppError> {
     let client = api::coincheck::client::CoincheckClient::new()?;
 
     let balancies = repositories::balance::my_balancies(&client).await?;
-    thread::sleep(Duration::from_millis(500));
-
     let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
-    thread::sleep(Duration::from_millis(500));
-
     let jpy_balance = repositories::balance::get_jpy_balance(&balancies)?;
 
     let mut new_orders: Vec<NewOrder> = Vec::new();
@@ -79,7 +75,6 @@ async fn run() -> Result<(), AppError> {
             &client,
             new_order.clone()
         ).await?;
-        thread::sleep(Duration::from_millis(500));
     }
 
     api::slack::send_orderd_information(new_orders).await?;

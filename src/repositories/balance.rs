@@ -21,7 +21,6 @@ pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppE
 }
 
 pub async fn my_managed_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppError> {
-
     let balancies = coincheck::balance::find(&client).await?;
     let currencies = balancies
         .as_object()
@@ -36,7 +35,6 @@ pub async fn my_managed_currencies(client: &CoincheckClient) -> Result<Vec<Strin
 }
 
 pub async fn my_trading_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppError> {
-
     let balancies = coincheck::balance::find(&client).await?;
     let currencies = balancies
         .as_object()
@@ -51,7 +49,6 @@ pub async fn my_trading_currencies(client: &CoincheckClient) -> Result<Vec<Strin
 }
 
 pub async fn my_balancies(client: &CoincheckClient) -> Result<Value, AppError> {
-
     let balances = coincheck::balance::find(&client).await?;
     let my_balancies: serde_json::Map<String, Value> = balances
         .as_object()

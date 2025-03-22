@@ -1,7 +1,7 @@
 use reqwest;
 use serde::Deserialize;
 
-use crate::api::coincheck::client::CoincheckClient;
+use crate::api::coincheck::client;
 use crate::error::AppError;
 
 #[derive(Deserialize)]
@@ -24,7 +24,7 @@ pub struct Rate {
     pub spread_ratio: f64,
 }
 
-pub async fn find(client: &CoincheckClient, currency: &str) -> Result<Rate, AppError> {
+pub async fn find(client: &client::CoincheckClient, currency: &str) -> Result<Rate, AppError> {
     let buy_endpoint = format!(
         "{}/api/exchange/orders/rate?pair={}_jpy&order_type=buy&amount=1", 
         client.base_url, 
@@ -47,5 +47,6 @@ pub async fn find(client: &CoincheckClient, currency: &str) -> Result<Rate, AppE
         spread_ratio,
     };
 
+    client::sleep()?;
     Ok(rate)
 }
