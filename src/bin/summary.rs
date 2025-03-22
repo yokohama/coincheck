@@ -39,10 +39,9 @@ async fn run() -> Result<(), AppError> {
         for currency in my_trading_currencies.iter() {
             if let Some(amount) = balances.get(currency).and_then(|v| v.as_f64()) {
 
-                thread::sleep(Duration::from_millis(500));
-
                 let rate = api::coincheck::rate::find(&client, &currency).await?;
                 let jpy_value = amount * rate.sell_rate;
+                thread::sleep(Duration::from_millis(500));
 
                 new_summary_records.push(models::summary_record::NewSummaryRecord {
                     summary_id: None,
@@ -53,14 +52,20 @@ async fn run() -> Result<(), AppError> {
                 });
 
                 total_jpy_value += jpy_value;
-
-            } else {
-                println!("hoge");
             }
         }
     } else {
         println!("JSON is not an object");
     }
+
+    let jpy_balance = repositories::balance::get_jpy_balance(&my_balancies)?;
+    new_summary_records.push(models::summary_record::NewSummaryRecord {
+        summary_id: None,
+        currency: "jpy".to_string(),
+        amount: jpy_balance,
+        rate: 0.0,
+        jpy_value: jpy_balance,
+    });
 
     let total_invested = repositories::transaction::total_invested(&mut conn)?;
     let pl = total_jpy_value - total_invested;
