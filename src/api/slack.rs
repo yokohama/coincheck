@@ -11,6 +11,8 @@ use crate::models::order::NewOrder;
 pub async fn send_orderd_information(new_orders: Vec<NewOrder>) -> Result<(), AppError> {
     dotenv().ok();
 
+    if new_orders.is_empty() { return Ok(()); }
+
     let url = env::var("SLACK_INCOMMING_WEBHOOK_URL")?;
     let client = Client::new();
 
@@ -21,18 +23,18 @@ pub async fn send_orderd_information(new_orders: Vec<NewOrder>) -> Result<(), Ap
 
     let mut blocks = vec![
         json!({
-	   		"type": "section",
-	   		"text": {
-	   			"type": "mrkdwn",
-	   			"text": "*注文を実行しました！*"
-	   		}
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "*注文を実行しました！*"
+            }
         })
     ];
 
-    client.post(url)
-        .json(&json!({ "blocks": blocks.extend(fields) }))
-        .send()
-        .await?;
+    blocks.extend(fields);
+    let payload = json!({ "blocks": blocks });
+
+    client.post(url).json(&payload).send().await?;
 
     Ok(())
 }

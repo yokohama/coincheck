@@ -29,7 +29,7 @@ pub async fn post_market_order(
     currency: &str,
     order_type: &str,
     amount: f64,
-) -> Result<(), AppError> {
+) -> Result<reqwest::StatusCode, AppError> {
     let pair = format!("{}_jpy", currency);
 
     let order = match order_type {
@@ -66,5 +66,5 @@ pub async fn post_market_order(
         error!("Status {}: {}", status, text);
     }
 
-    Ok(())
+    Ok(status)
 }

@@ -10,14 +10,16 @@ pub async fn post_market_order(
     new_order: NewOrder
 ) -> Result<(), AppError> {
 
-    coincheck::order::post_market_order(
+    let status = coincheck::order::post_market_order(
         client, 
         new_order.pair.as_str(), 
         new_order.order_type.as_str(),
         new_order.amount
     ).await?;
 
-    Order::create(conn, new_order)?;
+    if status.is_success() {
+        Order::create(conn, new_order)?;
+    }
 
     Ok(())
 }
