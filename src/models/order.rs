@@ -22,7 +22,7 @@ impl Order {
     #[allow(dead_code)]
     pub fn create(
         conn: &mut PgConnection, 
-        new_order: NewOrder
+        new_order: &NewOrder
      ) -> Result<(), AppError> {
 
         diesel::insert_into(orders)

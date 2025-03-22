@@ -1,7 +1,7 @@
 use diesel::prelude::*;
 
 use crate::error::AppError;
-use crate::api::coincheck;
+use crate::api::{coincheck, slack};
 use crate::models::order::{NewOrder, Order};
 
 pub async fn post_market_order(
@@ -18,7 +18,8 @@ pub async fn post_market_order(
     ).await?;
 
     if status.is_success() {
-        Order::create(conn, new_order)?;
+        Order::create(conn, &new_order)?;
+        slack::send_orderd_information(&new_order).await?;
     }
 
     Ok(())

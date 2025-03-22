@@ -77,7 +77,5 @@ async fn run() -> Result<(), AppError> {
         ).await?;
     }
 
-    api::slack::send_orderd_information(new_orders).await?;
-
     Ok(())
 }
