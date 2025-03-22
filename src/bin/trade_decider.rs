@@ -73,8 +73,6 @@ async fn run() -> Result<(), AppError> {
         }
     };
 
-    info!("{:#?}", new_orders);
-
     for new_order in new_orders.iter() {
         repositories::order::post_market_order(
             &mut conn,
@@ -85,8 +83,6 @@ async fn run() -> Result<(), AppError> {
     }
 
     api::slack::send_orderd_information(new_orders).await?;
-
-    info!("Execute trade_decider successful.");
 
     Ok(())
 }

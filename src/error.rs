@@ -14,6 +14,12 @@ pub enum AppError {
     #[error("Database connection pool error: {0}")]
     PoolError(#[from] diesel::r2d2::PoolError),
 
+    #[error("serde_json error: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
+
+    #[error("reqwet header to str error: {0}")]
+    ToStrError(#[from] reqwest::header::ToStrError),
+
     #[error("Invalid data: {0}")]
     InvalidData(String),
 }

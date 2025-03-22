@@ -1,7 +1,7 @@
 use reqwest::Client;
 use serde::Serialize;
 
-use log::info;
+use log::{info, error};
 
 use crate::error::AppError;
 use crate::api::coincheck::{
@@ -44,18 +44,27 @@ pub async fn post_market_order(
         _ => return Err(AppError::InvalidData("Invalid order_type".to_string())),
     };
 
-    let endpoint = format!("{}/api/exchange/orders", coincheck_client.base_url);
-    let headers = private::headers(&endpoint, &coincheck_client)?;
+    let json_string = serde_json::to_string(&order)?;
 
-    Client::new()
+    let endpoint = format!("{}/api/exchange/orders", coincheck_client.base_url);
+    let headers = private::headers(&endpoint, &coincheck_client, Some(&json_string))?;
+
+    let res = Client::new()
         .post(&endpoint)
         .headers(headers)
-        .json(&order)
+        .header("Content-Type", "application/json")
+        .body(json_string)
         .send()
-        .await?
-        .error_for_status()?;
+        .await?;
 
-    info!("{:#?}", order);
+    let status = res.status();
+    if status.is_success() {
+        let json: serde_json::Value = res.json().await?;
+        info!("Order success: {:#?}", json);
+    } else {
+        let text = res.text().await?;
+        error!("Status {}: {}", status, text);
+    }
 
     Ok(())
 }

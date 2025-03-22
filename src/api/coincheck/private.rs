@@ -13,6 +13,7 @@ type HmacSha256 = Hmac<Sha256>;
 pub fn headers(
     url: &str,
     client: &CoincheckClient,
+    body: Option<&String>,
 ) -> Result<HeaderMap, AppError> {
     let nonce = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -20,7 +21,10 @@ pub fn headers(
         .as_nanos()
         .to_string();
 
-    let message = format!("{}{}", nonce, url);
+    let message = match body {
+        Some(json_body) => format!("{}{}{}", nonce, url, json_body),
+        None => format!("{}{}", nonce, url),
+    };
 
     let mut mac = HmacSha256::new_from_slice(client.secret_key.as_bytes())
         .map_err(|e| AppError::InvalidData(format!("Hmac error: {}", e)))?;

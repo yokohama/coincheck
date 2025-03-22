@@ -1,7 +1,9 @@
 use serde_json::Value;
 
-use crate::api::coincheck::{self, balance};
-use crate::api::coincheck::client::CoincheckClient;
+use crate::api::coincheck::{
+    self,
+    client::CoincheckClient,
+};
 use crate::error::AppError;
 
 pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppError> {
