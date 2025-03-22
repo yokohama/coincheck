@@ -38,8 +38,6 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
 
     });
 
-    println!("{:#?}", payload);
-
     client.post(url).json(&payload).send().await?;
 
     Ok(())

@@ -60,9 +60,11 @@ pub async fn post_market_order(
     if status.is_success() {
         let json: serde_json::Value = res.json().await?;
         info!("Order success: {:#?}", json);
+        info!("{:#?}", order);
     } else {
         let text = res.text().await?;
         error!("Status {}: {}", status, text);
+        error!("{:#?}", order);
     }
 
     client::sleep()?;
