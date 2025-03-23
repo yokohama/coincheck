@@ -58,7 +58,7 @@ pub fn determine_trade_signal(
     let sma_long = env::var("MA_LONG")?.parse::<i32>()
         .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
 
-    let spred_threshold = env::var("SPREAD_THRESHOLD")?.parse::<f64>()
+    let spread_threshold = env::var("SPREAD_THRESHOLD")?.parse::<f64>()
         .unwrap_or(1.0);
 
     /*
@@ -94,8 +94,8 @@ pub fn determine_trade_signal(
     let ma_short_avg = results[0].as_ref().map(|r| r.avg).flatten();
     let ma_long_avg = results[1].as_ref().map(|r| r.avg).flatten();
 
-    let spread_rate = ((current_ask - current_bid) / current_bid) * 100.0;
-    if spread_rate > spred_threshold {
+    let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
+    if spread_ratio > spread_threshold {
         // スプレッド負けするので見送り。
         return Ok(TradeSignal::Hold);
     }

@@ -51,7 +51,7 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
     Ok(())
 }
 
-pub async fn send_summary(new_summary: NewSummary) -> Result<(), AppError> {
+pub async fn send_summary(title: &str, new_summary: &NewSummary) -> Result<(), AppError> {
     dotenv().ok();
 
     let url = env::var("SLACK_INCOMMING_WEBHOOK_URL")?;
@@ -67,7 +67,8 @@ pub async fn send_summary(new_summary: NewSummary) -> Result<(), AppError> {
                 "text": {
                     "type": "mrkdwn",
                     "text": format!(
-                        ":moneybag: *本日の資産レポート*\n *Total invested:* {}円\n *Total JPY value:* {}円\n *P/L:* {}円",
+                        ":moneybag: *{}*\n\n *Total invested:* {}円\n *Total JPY value:* {}円\n *P/L:* {}円",
+                        title,
                         new_summary.total_invested,
                         total_jpy_value,
                         pl,

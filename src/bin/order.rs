@@ -78,15 +78,9 @@ async fn run() -> Result<(), AppError> {
     let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
 
     for new_order in new_orders.iter_mut() {
-        info!("#");
-        info!("#");
-        info!("order_type: {}", new_order.order_type);
         if new_order.order_type == "buy" {
-            info!("order_type: {}, jpy_amount_per_currency: {}", new_order.order_type, jpy_amount_per_currency);
             new_order.amount = jpy_amount_per_currency;
         };
-        info!("#");
-        info!("#");
 
         repositories::order::post_market_order(
             &mut conn,
@@ -94,6 +88,9 @@ async fn run() -> Result<(), AppError> {
             new_order.clone()
         ).await?;
     }
+
+    let report = repositories::summary::make_report(&mut conn, &client).await?;
+    api::slack::send_summary("直近レポート", &report.summary).await?;
 
     Ok(())
 }
