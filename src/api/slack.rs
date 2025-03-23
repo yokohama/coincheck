@@ -41,6 +41,7 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
     });
 
     let res = client.post(url).json(&payload).send().await?;
+    info!("{:#?}", payload);
     info!("Order slack response debug: status={}, body={}", res.status(), res.text().await?);
 
     Ok(())
