@@ -14,21 +14,19 @@ use crate::models::summary_record::NewSummaryRecord;
 pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppError> {
     dotenv().ok();
 
-    let mut operation_type = "";
-    if new_order.order_type == "buy" {
-        operation_type = "購入";
+    let text = if new_order.order_type == "buy" {
+        format!(
+            ":coin: *[{}]* を *{}* 円分、購入しました！",
+            {new_order.pair.to_uppercase()},
+            {new_order.amount}
+        )
     } else {
-        operation_type = "売却";
-    }
-
-    let currency = new_order.pair.to_uppercase();
-
-    let text = format!(
-        ":coin: *[{}]* を *{}* 、{}しました！", 
-        currency,
-        new_order.amount,
-        operation_type
-    );
+        format!(
+            ":coin: *[{}]* を *{}* 、売却しました！",
+            {new_order.pair.to_uppercase()},
+            {new_order.amount}
+        )
+    };
 
     let url = env::var("SLACK_INCOMMING_WEBHOOK_URL")?;
     let client = Client::new();
