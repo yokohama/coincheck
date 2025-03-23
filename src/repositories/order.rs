@@ -8,6 +8,7 @@ use crate::api::{coincheck, slack};
 use crate::models::order::{NewOrder, Order};
 use diesel::sql_types::{Nullable, Double, Text, Integer};
 
+#[allow(dead_code)]
 pub enum TradeSignal {
     MarcketBuy(f64),  //f64: buy amount
     MarcketSell(f64), //f64: sell amount
@@ -16,11 +17,13 @@ pub enum TradeSignal {
 }
 
 #[derive(QueryableByName)]
+#[allow(dead_code)]
 pub struct AvgResult {
     #[diesel(sql_type = Nullable<Double>)]
     avg: Option<f64>,
 }
 
+#[allow(dead_code)]
 pub async fn post_market_order(
     conn: &mut PgConnection, 
     client: &coincheck::client::CoincheckClient,
@@ -42,12 +45,12 @@ pub async fn post_market_order(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn determine_trade_signal(
     conn: &mut PgConnection,
     currency: &str,
     current_bid: f64,
     current_ask: f64,
-    jpy_balance: f64,
     crypto_balance: f64,
 ) -> Result<TradeSignal, AppError> {
     dotenv().ok();
@@ -60,11 +63,6 @@ pub fn determine_trade_signal(
 
     let spread_threshold = env::var("SPREAD_THRESHOLD")?.parse::<f64>()
         .unwrap_or(1.0);
-
-    /*
-    let buy_ratio = env::var("BUY_RATIO")?.parse::<f64>()
-        .unwrap_or(0.3);
-    */
 
     let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>()
         .unwrap_or(0.5);

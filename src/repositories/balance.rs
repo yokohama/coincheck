@@ -20,6 +20,7 @@ pub async fn my_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppE
     Ok(currencies)
 }
 
+#[allow(dead_code)]
 pub async fn my_managed_currencies(client: &CoincheckClient) -> Result<Vec<String>, AppError> {
     let balancies = coincheck::balance::find(&client).await?;
     let currencies = balancies
@@ -73,6 +74,7 @@ pub fn get_jpy_balance(balancies: &Value) -> Result<f64, AppError> {
     }
 }
 
+#[allow(dead_code)]
 pub fn get_crypto_balance(balancies: &Value, currency: &str) -> Result<f64, AppError> {
     if let Some(crypto) = balancies.get(currency) {
         Ok(crypto.as_f64().unwrap_or(0.0))

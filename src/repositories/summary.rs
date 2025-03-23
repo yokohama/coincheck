@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 
+#[allow(dead_code)]
 use crate::{
     repositories,
     models,
@@ -7,11 +8,13 @@ use crate::{
 };
 use crate::error::AppError;
 
+#[allow(dead_code)]
 pub struct Report {
     pub summary: models::summary::NewSummary,
     pub summary_records: Vec<models::summary_record::NewSummaryRecord>,
 }
 
+#[allow(dead_code)]
 pub fn create(
     conn: &mut PgConnection, 
     new_summary: &models::summary::NewSummary,
@@ -21,6 +24,7 @@ pub fn create(
     models::summary::Summary::create(conn, new_summary, new_summary_records)
 }
 
+#[allow(dead_code)]
 pub async fn make_report(
     conn: &mut PgConnection,
     client: &api::coincheck::client::CoincheckClient,

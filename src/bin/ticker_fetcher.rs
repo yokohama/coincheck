@@ -1,3 +1,4 @@
+use coincheck::models;
 use dotenvy::dotenv;
 
 use log::{info, error};
@@ -34,7 +35,9 @@ async fn run() -> Result<(), AppError> {
         repositories::ticker::create(&mut conn, new_ticker)?;
     };
 
-    info!("Execute ticker_fetcher successful.");
+    let deleted_count = models::ticker::Ticker::delete_oldest(&mut conn)?;
+
+    info!("Execute ticker_fetcher successful and [record deleted {}].", deleted_count);
 
     Ok(())
 }

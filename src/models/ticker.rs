@@ -33,6 +33,36 @@ impl Ticker {
 
         Ok(())
     }
+
+    #[allow(dead_code)]
+    pub fn delete_oldest(conn: &mut PgConnection) -> Result<usize, AppError> {
+        let retention_threshold = 1000;
+        let purge_ratio = 0.10;
+
+        let total: i64 = tickers
+            .select(diesel::dsl::count_star())
+            .first(conn)?;
+
+        if total >= retention_threshold {
+            let to_delete = (total as f64 * purge_ratio).ceil() as i64;
+
+            let ids_to_delete = tickers
+                .select(id)
+                .order(timestamp.asc())
+                .limit(to_delete)
+                .load::<i32>(conn)?;
+
+            if !ids_to_delete.is_empty() {
+                let deleted = diesel::delete(tickers.filter(id.eq_any(ids_to_delete)))
+                    .execute(conn)?;
+                Ok(deleted)
+            } else {
+                Ok(0)
+            }
+        } else {
+            Ok(0)
+        }
+    }
 }
 
 #[derive(Debug, Insertable, Serialize, Deserialize)]

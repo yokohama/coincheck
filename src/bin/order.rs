@@ -43,7 +43,6 @@ async fn run() -> Result<(), AppError> {
             ticker.bid,
             ticker.ask,
             jpy_balance,
-            repositories::balance::get_crypto_balance(&balancies, &currency)?,
         ).map_err(|e| AppError::InvalidData(format!("{}", e)))?;
 
         match signal {

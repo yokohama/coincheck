@@ -9,6 +9,7 @@ pub struct FetchRate {
     pub rate: String,
 }
 
+#[allow(dead_code)]
 impl FetchRate {
     pub fn to_f64(&self) -> Result<f64, AppError> {
         self.rate.parse::<f64>().map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))
@@ -24,6 +25,7 @@ pub struct Rate {
     pub spread_ratio: f64,
 }
 
+#[allow(dead_code)]
 pub async fn find(client: &client::CoincheckClient, currency: &str) -> Result<Rate, AppError> {
     let buy_endpoint = format!(
         "{}/api/exchange/orders/rate?pair={}_jpy&order_type=buy&amount=1", 

@@ -6,6 +6,7 @@ use crate::error::AppError;
 use crate::api::coincheck::client;
 use crate::models::ticker::NewTicker;
 
+#[allow(dead_code)]
 pub async fn find(
     coincheck_client: &client::CoincheckClient,
     currency: &str,

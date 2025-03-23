@@ -10,6 +10,7 @@ use crate::api::coincheck::{
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "order_type")]
+#[allow(dead_code)]
 pub enum MarketOrderRequest {
     #[serde(rename = "market_buy")]
     Buy {  

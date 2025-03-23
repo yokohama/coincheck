@@ -49,6 +49,7 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn send_summary(
     title: &str, 
     new_summary: &NewSummary,
@@ -91,6 +92,7 @@ pub async fn send_summary(
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn make_currency_fields(new_summary_records: Vec<NewSummaryRecord>) -> serde_json::Value {
     let mut fields: Vec<serde_json::Value> = Vec::new();
     for record in new_summary_records {
