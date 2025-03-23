@@ -85,8 +85,6 @@ pub async fn send_summary(
 	    ]
     });
 
-    println!("{:#?}", payload);
-
     let res = client.post(&url).json(&payload).send().await?.error_for_status()?;
     info!("Slack send_summary: status={}, body={}", res.status(), res.text().await?);
 
