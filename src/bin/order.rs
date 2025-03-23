@@ -77,8 +77,13 @@ async fn run() -> Result<(), AppError> {
     let jpy_amount = jpy_balance * buy_ratio;
     let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
 
+    let new_orders_count = new_orders.len();
+
     for new_order in new_orders.iter_mut() {
         if new_order.order_type == "buy" {
+            info!("#");
+            info!("# buy: {}JPY", jpy_amount_per_currency);
+            info!("#");
             new_order.amount = jpy_amount_per_currency;
         };
 
@@ -89,8 +94,10 @@ async fn run() -> Result<(), AppError> {
         ).await?;
     }
 
-    let report = repositories::summary::make_report(&mut conn, &client).await?;
-    api::slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
+    if new_orders_count > 0 {
+        let report = repositories::summary::make_report(&mut conn, &client).await?;
+        api::slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
+    }
 
     Ok(())
 }
