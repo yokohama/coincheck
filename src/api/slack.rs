@@ -17,27 +17,32 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
     let client = Client::new();
 
     let payload = json!({
-        "type": "section",
-        "text": {
-            "type": "mrkdwn",
-            "text": ":coin: *注文を実行しました！*"
-        },
-        "type": "section",
-        "fields": [
-             {
-               "type": "mrkdwn",
-               "text": format!("*通貨:* {}", new_order.pair)
-             },
-             {
-                 "type": "mrkdwn",
-                 "text": format!("*オペレーション:* {}", new_order.order_type)
-             },
-             {
-                 "type": "mrkdwn",
-                 "text": format!("*Amount:* {}", new_order.amount)
-             },
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": ":coin: *注文を実行しました！*"
+                }
+            },
+            {
+                "type": "section",
+                "fields": [
+                     {
+                       "type": "mrkdwn",
+                       "text": format!("*通貨:* {}", new_order.pair)
+                     },
+                     {
+                         "type": "mrkdwn",
+                         "text": format!("*オペレーション:* {}", new_order.order_type)
+                     },
+                     {
+                         "type": "mrkdwn",
+                         "text": format!("*Amount:* {}", new_order.amount)
+                     },
+                ]
+            }
         ]
-
     });
 
     let res = client.post(url).json(&payload).send().await?;
