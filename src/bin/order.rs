@@ -88,13 +88,11 @@ async fn run() -> Result<(), AppError> {
         info!("#");
         info!("#");
 
-        /*
         repositories::order::post_market_order(
             &mut conn,
             &client,
             new_order.clone()
         ).await?;
-        */
     }
 
     Ok(())

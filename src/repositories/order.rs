@@ -103,16 +103,17 @@ pub fn determine_trade_signal(
     match (ma_short_avg, ma_long_avg) {
         (Some(short_avg), Some(long_avg)) => {
             if short_avg > long_avg {
-                //let amount = jpy_balance * buy_ratio;
-                //Ok(TradeSignal::MarcketBuy(amount)) // ゴールデンクロス
-
-                // ゴールデンクロス。
-                // ここでは仮の値をセット。
+                // ゴールデンクロス
+                // 0.0の仮値をセット。
                 // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
                 Ok(TradeSignal::MarcketBuy(0.0))
+
             } else if short_avg < long_avg {
+                // デッドクロス
+                // こちらは仮想通貨毎に売る量を決定できるので、ここでセット
                 let amount = crypto_balance * sell_ratio;
-                Ok(TradeSignal::MarcketSell(amount)) // デッドクロス
+                Ok(TradeSignal::MarcketSell(amount))
+
             } else {
                 Ok(TradeSignal::Hold)
             }
