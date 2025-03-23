@@ -9,8 +9,8 @@ use crate::error::AppError;
 use crate::models;
 
 pub enum TradeSignal {
-    Buy(f64),  //f64: buy amount
-    Sell(f64), //f64: sell amount
+    MarcketBuy(f64),  //f64: buy amount
+    MarcketSell(f64), //f64: sell amount
     Hold,
     InsufficientData,
 }
@@ -88,11 +88,11 @@ pub fn determine_trade_signal(
     match (ma_short_avg, ma_long_avg) {
         (Some(short_avg), Some(long_avg)) => {
             if short_avg > long_avg {
-                let amount = (jpy_balance * buy_ratio) / current_ask;
-                Ok(TradeSignal::Buy(amount)) // ゴールデンクロス
+                let amount = jpy_balance * buy_ratio;
+                Ok(TradeSignal::MarcketBuy(amount)) // ゴールデンクロス
             } else if short_avg < long_avg {
                 let amount = crypto_balance * sell_ratio;
-                Ok(TradeSignal::Sell(amount)) // デッドクロス
+                Ok(TradeSignal::MarcketSell(amount)) // デッドクロス
             } else {
                 Ok(TradeSignal::Hold)
             }

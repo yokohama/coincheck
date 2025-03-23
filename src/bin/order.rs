@@ -46,7 +46,7 @@ async fn run() -> Result<(), AppError> {
         ).map_err(|e| AppError::InvalidData(format!("{}", e)))?;
 
         match signal {
-            TradeSignal::Buy(amount) => {
+            TradeSignal::MarcketBuy(amount) => {
                 let new_order = NewOrder {
                     rate: Some(0.0),
                     pair: currency.clone(),
@@ -55,7 +55,7 @@ async fn run() -> Result<(), AppError> {
                 };
                 new_orders.push(new_order);
             },
-            TradeSignal::Sell(amount) => {
+            TradeSignal::MarcketSell(amount) => {
                 let new_order = NewOrder {
                     rate: Some(0.0),
                     pair: currency.clone(),

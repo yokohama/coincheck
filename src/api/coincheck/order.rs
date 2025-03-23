@@ -12,10 +12,11 @@ use crate::api::coincheck::{
 #[serde(tag = "order_type")]
 pub enum MarketOrderRequest {
     #[serde(rename = "market_buy")]
-    Buy {
+    Buy {  
         pair: String,
         market_buy_amount: f64,
     },
+
     #[serde(rename = "market_sell")]
     Sell {
         pair: String,
