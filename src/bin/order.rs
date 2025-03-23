@@ -1,15 +1,16 @@
+use std::env;
 use dotenvy::dotenv;
 use std::thread;
 use std::time::Duration;
 
-use log::error;
+use log::{info, error};
 use simplelog::{Config, LevelFilter, SimpleLogger};
 use tokio;
 
 use coincheck::error::AppError;
 use coincheck::db::establish_connection;
 use coincheck::api;
-use coincheck::repositories::{self, ticker::TradeSignal};
+use coincheck::repositories::{self, order::TradeSignal};
 use coincheck::models::order::NewOrder;
 
 #[tokio::main]
@@ -36,7 +37,7 @@ async fn run() -> Result<(), AppError> {
         let ticker = api::coincheck::ticker::find(&client, &currency).await?;
         thread::sleep(Duration::from_millis(500));
 
-        let signal = repositories::ticker::determine_trade_signal(
+        let signal = repositories::order::determine_trade_signal(
             &mut conn, 
             currency,
             ticker.bid,
@@ -69,12 +70,31 @@ async fn run() -> Result<(), AppError> {
         }
     };
 
-    for new_order in new_orders.iter() {
+    let buy_ratio = env::var("BUY_RATIO")?
+        .parse::<f64>()
+        .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
+
+    let jpy_amount = jpy_balance * buy_ratio;
+    let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
+
+    for new_order in new_orders.iter_mut() {
+        info!("#");
+        info!("#");
+        info!("order_type: {}", new_order.order_type);
+        if new_order.order_type == "buy" {
+            info!("order_type: {}, jpy_amount_per_currency: {}", new_order.order_type, jpy_amount_per_currency);
+            new_order.amount = jpy_amount_per_currency;
+        };
+        info!("#");
+        info!("#");
+
+        /*
         repositories::order::post_market_order(
             &mut conn,
             &client,
             new_order.clone()
         ).await?;
+        */
     }
 
     Ok(())
