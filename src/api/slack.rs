@@ -22,16 +22,12 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
-                    "text": ":coin: *注文を実行しました！*"
+                    "text": format!(":coin: *[{}] 注文を実行しました！*", new_order.pair)
                 }
             },
             {
                 "type": "section",
                 "fields": [
-                     {
-                       "type": "mrkdwn",
-                       "text": format!("*通貨:* {}", new_order.pair)
-                     },
                      {
                          "type": "mrkdwn",
                          "text": format!("*オペレーション:* {}", new_order.order_type)
