@@ -75,15 +75,15 @@ async fn run() -> Result<(), AppError> {
         .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
 
     let jpy_amount = jpy_balance * buy_ratio;
+    info!("# jpy_amount: {}", jpy_amount);
     let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
+    info!("# jpy_amount_per_currency: {}", jpy_amount_per_currency);
 
     let new_orders_count = new_orders.len();
 
     for new_order in new_orders.iter_mut() {
         if new_order.order_type == "buy" {
-            info!("#");
             info!("# buy: {}JPY", jpy_amount_per_currency);
-            info!("#");
             new_order.amount = jpy_amount_per_currency;
         };
 
