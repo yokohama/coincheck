@@ -23,19 +23,21 @@ impl Summary {
     pub fn create(
         conn: &mut PgConnection, 
         new_summary: &NewSummary,
-        mut new_summary_records: Vec<NewSummaryRecord>,
+        //mut new_summary_records: Vec<NewSummaryRecord>,
+        new_summary_records: &mut Vec<NewSummaryRecord>,
     ) -> Result<(), AppError> {
 
         let inserted: Summary = diesel::insert_into(summaries)
             .values(new_summary)
             .get_result(conn)?;
 
+        //for record in new_summary_records.iter_mut() {
         for record in new_summary_records.iter_mut() {
             record.summary_id = Some(inserted.id);
         }
 
         diesel::insert_into(summary_records::table)
-            .values(&new_summary_records)
+            .values(&*new_summary_records)
             .execute(conn)?;
 
         Ok(())

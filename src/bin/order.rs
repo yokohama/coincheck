@@ -90,7 +90,7 @@ async fn run() -> Result<(), AppError> {
     }
 
     let report = repositories::summary::make_report(&mut conn, &client).await?;
-    api::slack::send_summary("直近レポート", &report.summary).await?;
+    api::slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
 
     Ok(())
 }
