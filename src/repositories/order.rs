@@ -77,20 +77,44 @@ pub async fn post_market_order(
             }
         };
 
-        let signal = match determine_trade_signal(
+        match determine_trade_signal(
             conn, 
             currency,
             ticker.bid,
             ticker.ask,
             crypto_balance,
         ).await {
-            Ok(s) => s,
+            Ok(s) => {
+              match s {
+                TradeSignal::MarcketBuy(amount) => {
+                    let new_order = models::order::NewOrder {
+                        rate: Some(0.0),
+                        pair: currency.clone(),
+                        order_type: "buy".to_string(),
+                        amount,
+                    };
+                    new_orders.push(new_order);
+                },
+                TradeSignal::MarcketSell(amount) => {
+                    let new_order = models::order::NewOrder {
+                        rate: Some(0.0),
+                        pair: currency.clone(),
+                        order_type: "sell".to_string(),
+                        amount,
+                    };
+                    new_orders.push(new_order);
+                },
+                TradeSignal::Hold => {},
+                TradeSignal::InsufficientData => {},
+              }
+            },
             Err(e) => {
                 error!("#- [{}] signal取得失敗: {}", currency, e);
                 continue;
             }
         };
 
+        /*
         match signal {
             TradeSignal::MarcketBuy(amount) => {
                 let new_order = models::order::NewOrder {
@@ -113,6 +137,7 @@ pub async fn post_market_order(
             TradeSignal::Hold => {},
             TradeSignal::InsufficientData => {},
         }
+        */
     };
 
     // 購入と判断した通貨毎に使えるJPYを等分
