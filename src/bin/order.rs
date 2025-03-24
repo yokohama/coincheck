@@ -40,12 +40,14 @@ async fn run() -> Result<(), AppError> {
         let ticker = api::coincheck::ticker::find(&client, &currency).await?;
         thread::sleep(Duration::from_millis(500));
 
+        let crypto_balance = repositories::balance::get_crypto_balance(&balancies, currency)?;
+
         let signal = repositories::order::determine_trade_signal(
             &mut conn, 
             currency,
             ticker.bid,
             ticker.ask,
-            jpy_balance,
+            crypto_balance,
         ).map_err(|e| AppError::InvalidData(format!("{}", e)))?;
 
         match signal {
