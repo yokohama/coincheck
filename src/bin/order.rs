@@ -78,9 +78,8 @@ async fn run() -> Result<(), AppError> {
     let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
     info!("# jpy_amount_per_currency: {}", jpy_amount_per_currency);
 
-    let new_orders_count = new_orders.len();
-
     for new_order in new_orders.iter_mut() {
+        // buyの場合は各通貨に全体JPYの3割を等分する
         if new_order.order_type == "buy" {
             info!("# buy: {}JPY", jpy_amount_per_currency);
             new_order.amount = jpy_amount_per_currency;
@@ -93,9 +92,11 @@ async fn run() -> Result<(), AppError> {
         ).await?;
     }
 
-    if new_orders_count > 0 {
+    if new_orders.len() > 0 {
         let report = repositories::summary::make_report(&mut conn, &client).await?;
         api::slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
+    } else {
+        info!("# new_orders_count: {}", new_orders.len());
     }
 
     Ok(())
