@@ -18,10 +18,14 @@ use diesel::sql_types::{Nullable, Double, Text, Integer};
  * 30毎に、cargo run --bin orderを実行して、注文
  * 
  * [envの設定]
- * MA_SHORT=5
- * MA_LONG=10
- * SPREAD_THRESHOLD=1.0
- * BUY_RATIO=0.3
+ * MA_SHORT=10
+ * MA_LONG=30
+ * BUY_THRESHOLD_1=20000
+ * BUY_RATIO_1=0.9
+ * BUY_THRESHOLD_2=50000
+ * BUY_RATIO_2=0.7
+ * BUY_THRESHOLD_3=150000
+ * BUY_RATIO_3=0.5
  * SELL_RATIO=0.4
  */
 
@@ -92,12 +96,10 @@ pub async fn post_market_order(
         }
     };
 
-    let buy_ratio = env::var("BUY_RATIO")?.parse::<f64>().unwrap();
-    let jpy_amount = jpy_balance * buy_ratio;
-    let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
+    // 購入と判断した通貨毎に使えるJPYを等分
+    let jpy_amount_per_currency = get_buy_ratio(jpy_balance, new_orders.len() as i32)?;
 
     for new_order in new_orders.iter_mut() {
-        // buyの場合は各通貨に全体JPYの3割を等分する
         if new_order.order_type == "buy" {
             new_order.amount = jpy_amount_per_currency;
         };
@@ -143,11 +145,6 @@ pub async fn determine_trade_signal(
 
     let sma_long = env::var("MA_LONG")?.parse::<i32>()
         .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-
-    /*
-    let spread_threshold = env::var("SPREAD_THRESHOLD")?.parse::<f64>()
-        .unwrap_or(1.0);
-    */
 
     let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>().unwrap();
 
@@ -203,4 +200,33 @@ pub async fn determine_trade_signal(
         }
         _ => Ok(TradeSignal::InsufficientData) // データ不足
     }
+}
+
+/*
+ * 通貨毎に購入するJPYを算出(今は単純に等分している）。
+ */
+fn get_buy_ratio(jpy_balance: f64, new_orders_length: i32) -> Result<f64, AppError> {
+    let threshold_1 = env::var("BUY_THRESHOLD_1")?.parse::<f64>().unwrap();
+    let threshold_2 = env::var("BUY_THRESHOLD_2")?.parse::<f64>().unwrap();
+    let threshold_3 = env::var("BUY_THRESHOLD_3")?.parse::<f64>().unwrap();
+    
+    let ratio_1 = env::var("BUY_RATIO_1")?.parse::<f64>().unwrap();
+    let ratio_2 = env::var("BUY_RATIO_2")?.parse::<f64>().unwrap();
+    let ratio_3 = env::var("BUY_RATIO_3")?.parse::<f64>().unwrap();
+    let ratio_default = env::var("BUY_RATIO_DEFAULT")?.parse::<f64>().unwrap();
+    
+    let buy_ratio = if jpy_balance < threshold_1 {
+        ratio_1
+    } else if jpy_balance < threshold_2 {
+        ratio_2
+    } else if jpy_balance < threshold_3 {
+        ratio_3
+    } else {
+        ratio_default
+    };
+
+    let jpy_amount = jpy_balance * buy_ratio;
+    let jpy_amount_per_currency = jpy_amount / new_orders_length as f64;
+
+    Ok(jpy_amount_per_currency)
 }
