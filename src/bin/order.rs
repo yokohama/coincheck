@@ -34,6 +34,7 @@ async fn run() -> Result<(), AppError> {
     info!("# オーダー情報");
     info!("#");
     info!("balance: {:#?}", balancies);
+    info!("");
 
     let mut new_orders: Vec<NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
@@ -90,16 +91,13 @@ async fn run() -> Result<(), AppError> {
             &client,
             new_order.clone()
         ).await?;
-
-        println!("#-- order: {:#?}", new_order);
     }
 
     if new_orders.len() > 0 {
         let report = repositories::summary::make_report(&mut conn, &client).await?;
-        info!("#-- summary: {:#?}", report);
         api::slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
     } else {
-        info!("#-- summary: オーダーなし");
+        info!("summary: オーダーなし");
     }
 
     println!("");
