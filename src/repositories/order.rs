@@ -64,15 +64,15 @@ pub async fn post_market_order(
         let ticker = match coincheck::ticker::find(&client, &currency).await {
             Ok(ticker) => ticker,
             Err(e) => {
-                error!("#- [{}] ticker取得失敗: {}", currency, e);
+                error!("#- [{}] ticker取得失敗: api非対応通貨の可能性: {}", currency, e);
                 continue;
             }
         };
 
         let crypto_balance = match repositories::balance::get_crypto_balance(&balancies, currency) {
             Ok(b) => b,
-            Err(e) => {
-                error!("#- [{}] balance取得失敗: {}", currency, e);
+            Err(_) => {
+                error!("#- [{}] balance取得失敗: データ不足", currency);
                 continue;
             }
         };
@@ -86,7 +86,7 @@ pub async fn post_market_order(
         ).await {
             Ok(s) => s,
             Err(e) => {
-                error!("#- [{}] balance取得失敗: {}", currency, e);
+                error!("#- [{}] signal取得失敗: {}", currency, e);
                 continue;
             }
         };
