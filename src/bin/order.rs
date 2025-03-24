@@ -86,11 +86,8 @@ async fn run() -> Result<(), AppError> {
             new_order.amount = jpy_amount_per_currency;
         };
 
-        repositories::order::post_market_order(
-            &mut conn,
-            &client,
-            new_order.clone()
-        ).await?;
+        repositories::order::post_market_order(&mut conn, &client, new_order.clone()).await?;
+        info!("");
     }
 
     if new_orders.len() > 0 {
