@@ -1,5 +1,5 @@
 use dotenvy::dotenv;
-use log::{info, error};
+use log::error;
 use simplelog::{Config, LevelFilter, SimpleLogger};
 
 use tokio;
@@ -26,10 +26,7 @@ async fn run() -> Result<(), AppError> {
     let mut conn = pool.get()?;
     let client = api::coincheck::client::CoincheckClient::new()?;
 
-    let mut report = repositories::summary::make_report(&mut conn, &client).await?;
-    repositories::summary::create(&mut conn, &report.summary, &mut report.summary_records)?;
-    api::slack::send_summary("本日のレポート", &report.summary, report.summary_records).await?;
-    info!("Execute summary successful.");
+    repositories::summary::reporing(&mut conn, &client).await?;
 
     Ok(())
 }

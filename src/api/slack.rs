@@ -16,13 +16,13 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
 
     let text = if new_order.order_type == "buy" {
         format!(
-            ":coin: *[{}]* を *{}* 円分、購入しました！",
+            ":coin: *[{}][購入]* {}円分",
             {new_order.pair.to_uppercase()},
             {new_order.amount}
         )
     } else {
         format!(
-            ":coin: *[{}]* を *{}* 、売却しました！",
+            ":coin: *[{}][売却]* {}",
             {new_order.pair.to_uppercase()},
             {new_order.amount}
         )

@@ -1,4 +1,5 @@
 use thiserror::Error;
+use plotters::prelude::DrawingAreaErrorKind;
 
 #[derive(Debug, Error)]
 pub enum AppError {

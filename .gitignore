@@ -1,2 +1,4 @@
 /target
 .env
+/chart_images/*
+!/chart_images/.keep
