@@ -32,6 +32,9 @@ async fn run() -> Result<(), AppError> {
     let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
     let jpy_balance = repositories::balance::get_jpy_balance(&balancies)?;
 
+    info!("# balancies: {:#?}", balancies);
+    info!("# jpy_balance: {}", jpy_balance);
+
     let mut new_orders: Vec<NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
         let ticker = api::coincheck::ticker::find(&client, &currency).await?;
