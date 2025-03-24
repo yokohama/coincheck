@@ -99,6 +99,7 @@ pub async fn post_market_order(
     // 購入と判断した通貨毎に使えるJPYを等分
     let jpy_amount_per_currency = get_buy_ratio(jpy_balance, new_orders.len() as i32)?;
 
+    let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
         if new_order.order_type == "buy" {
             new_order.amount = jpy_amount_per_currency;
@@ -114,12 +115,13 @@ pub async fn post_market_order(
         if status.is_success() {
             models::order::Order::create(conn, &new_order)?;
             slack::send_orderd_information(&new_order).await?;
+            success_order_count += 1;
         }
 
         info!("");
     }
 
-    if new_orders.len() > 0 {
+    if success_order_count > 0 {
         let report = repositories::summary::make_report(conn, &client).await?;
         slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
     } else {
