@@ -68,6 +68,7 @@ pub async fn post_market_order(
         error!("Status {}: {}", status, text);
         error!("{:#?}", order);
     }
+    info!("");
 
     client::sleep()?;
     Ok(status)
