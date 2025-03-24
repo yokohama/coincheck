@@ -1,6 +1,6 @@
 use std::env;
 use dotenvy::dotenv;
-use log::info;
+use log::{info, error};
 
 use diesel::prelude::*;
 
@@ -61,16 +61,35 @@ pub async fn post_market_order(
 
     let mut new_orders: Vec<models::order::NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
-        let ticker = coincheck::ticker::find(&client, &currency).await?;
-        let crypto_balance = repositories::balance::get_crypto_balance(&balancies, currency)?;
+        let ticker = match coincheck::ticker::find(&client, &currency).await {
+            Ok(ticker) => ticker,
+            Err(e) => {
+                error!("#- [{}] ticker取得失敗: {}", currency, e);
+                continue;
+            }
+        };
 
-        let signal = determine_trade_signal(
+        let crypto_balance = match repositories::balance::get_crypto_balance(&balancies, currency) {
+            Ok(b) => b,
+            Err(e) => {
+                error!("#- [{}] balance取得失敗: {}", currency, e);
+                continue;
+            }
+        };
+
+        let signal = match determine_trade_signal(
             conn, 
             currency,
             ticker.bid,
             ticker.ask,
             crypto_balance,
-        ).await?;
+        ).await {
+            Ok(s) => s,
+            Err(e) => {
+                error!("#- [{}] balance取得失敗: {}", currency, e);
+                continue;
+            }
+        };
 
         match signal {
             TradeSignal::MarcketBuy(amount) => {
