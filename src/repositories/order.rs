@@ -7,10 +7,23 @@ use diesel::prelude::*;
 use crate::{
     api::{coincheck, slack},
     repositories,
-    models::order::{NewOrder, Order},
+    models,
     error::AppError,
 };
 use diesel::sql_types::{Nullable, Double, Text, Integer};
+
+/*
+ * [cron]
+ * 2分毎に、cargo run --bin ticker_fetcherを実行して、tickersに情報を蓄積
+ * 30毎に、cargo run --bin orderを実行して、注文
+ * 
+ * [envの設定]
+ * MA_SHORT=5
+ * MA_LONG=10
+ * SPREAD_THRESHOLD=1.0
+ * BUY_RATIO=0.3
+ * SELL_RATIO=0.4
+ */
 
 #[allow(dead_code)]
 pub enum TradeSignal {
@@ -27,30 +40,6 @@ pub struct AvgResult {
     avg: Option<f64>,
 }
 
-/*
-#[allow(dead_code)]
-pub async fn post_market_order(
-    conn: &mut PgConnection, 
-    client: &coincheck::client::CoincheckClient,
-    new_order: NewOrder
-) -> Result<(), AppError> {
-
-    let status = coincheck::order::post_market_order(
-        client, 
-        new_order.pair.as_str(), 
-        new_order.order_type.as_str(),
-        new_order.amount
-    ).await?;
-
-    if status.is_success() {
-        Order::create(conn, &new_order)?;
-        slack::send_orderd_information(&new_order).await?;
-    }
-
-    Ok(())
-}
-*/
-
 #[allow(dead_code)]
 pub async fn post_market_order(
     conn: &mut PgConnection,
@@ -66,7 +55,7 @@ pub async fn post_market_order(
     info!("balance: {:#?}", balancies);
     info!("");
 
-    let mut new_orders: Vec<NewOrder> = Vec::new();
+    let mut new_orders: Vec<models::order::NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
         let ticker = coincheck::ticker::find(&client, &currency).await?;
         let crypto_balance = repositories::balance::get_crypto_balance(&balancies, currency)?;
@@ -77,11 +66,11 @@ pub async fn post_market_order(
             ticker.bid,
             ticker.ask,
             crypto_balance,
-        ).map_err(|e| AppError::InvalidData(format!("{}", e)))?;
+        ).await?;
 
         match signal {
             TradeSignal::MarcketBuy(amount) => {
-                let new_order = NewOrder {
+                let new_order = models::order::NewOrder {
                     rate: Some(0.0),
                     pair: currency.clone(),
                     order_type: "buy".to_string(),
@@ -90,7 +79,7 @@ pub async fn post_market_order(
                 new_orders.push(new_order);
             },
             TradeSignal::MarcketSell(amount) => {
-                let new_order = NewOrder {
+                let new_order = models::order::NewOrder {
                     rate: Some(0.0),
                     pair: currency.clone(),
                     order_type: "sell".to_string(),
@@ -103,10 +92,7 @@ pub async fn post_market_order(
         }
     };
 
-    let buy_ratio = env::var("BUY_RATIO")?
-        .parse::<f64>()
-        .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-
+    let buy_ratio = env::var("BUY_RATIO")?.parse::<f64>().unwrap();
     let jpy_amount = jpy_balance * buy_ratio;
     let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
 
@@ -124,7 +110,7 @@ pub async fn post_market_order(
         ).await?;
 
         if status.is_success() {
-            Order::create(conn, &new_order)?;
+            models::order::Order::create(conn, &new_order)?;
             slack::send_orderd_information(&new_order).await?;
         }
 
@@ -142,9 +128,8 @@ pub async fn post_market_order(
     Ok(())
 }
 
-
 #[allow(dead_code)]
-pub fn determine_trade_signal(
+pub async fn determine_trade_signal(
     conn: &mut PgConnection,
     currency: &str,
     current_bid: f64,
@@ -159,11 +144,12 @@ pub fn determine_trade_signal(
     let sma_long = env::var("MA_LONG")?.parse::<i32>()
         .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
 
+    /*
     let spread_threshold = env::var("SPREAD_THRESHOLD")?.parse::<f64>()
         .unwrap_or(1.0);
+    */
 
-    let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>()
-        .unwrap_or(0.5);
+    let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>().unwrap();
 
     let periods = vec![sma_short, sma_long];
     let mut results: Vec<Option<AvgResult>> = Vec::new();
@@ -191,7 +177,12 @@ pub fn determine_trade_signal(
     let ma_long_avg = results[1].as_ref().map(|r| r.avg).flatten();
 
     let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
+    let spread_threshold = models::ticker::get_dynamic_spread_threshold(conn, currency).await?;
+    info!("#- spread_threshold: {}", spread_threshold);
     if spread_ratio > spread_threshold {
+
+    //let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
+    //if spread_ratio > spread_threshold {
         // スプレッド負けするので見送り。
         return Ok(TradeSignal::Hold);
     }

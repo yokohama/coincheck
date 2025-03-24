@@ -1,4 +1,5 @@
-use diesel::prelude::*;
+use diesel::{prelude::*, sql_query};
+use diesel::sql_types::{Text, Double};
 use serde::{Serialize, Deserialize};
 use chrono::NaiveDateTime;
 
@@ -79,4 +80,51 @@ pub struct NewTicker {
     #[serde(serialize_with = "serialize_unix_timestamp", 
        deserialize_with = "deserialize_unix_timestamp")]
     pub timestamp: NaiveDateTime,
+}
+
+#[derive(QueryableByName, Debug)]
+#[allow(dead_code)]
+struct SpreadStats {
+    #[diesel(sql_type = Double)]
+    pub median: f64,
+
+    #[diesel(sql_type = Double)]
+    pub stddev: f64,
+
+    #[diesel(sql_type = Double)]
+    pub suggested_spread_threshold: f64,
+}
+
+pub async fn get_dynamic_spread_threshold(conn: &mut PgConnection, currency: &str) -> Result<f64, AppError> {
+    let query = r#"
+        WITH spread_data AS (
+            SELECT 
+                ((ask - bid) / bid) * 100.0 AS spread
+            FROM tickers
+            WHERE pair = $1
+        ),
+        ordered_spread AS (
+            SELECT spread,
+                   ROW_NUMBER() OVER (ORDER BY spread) AS rn,
+                   COUNT(*) OVER () AS total
+            FROM spread_data
+        ),
+        median_calc AS (
+            SELECT AVG(spread) AS median
+            FROM ordered_spread
+            WHERE rn IN ((total + 1) / 2, (total + 2) / 2)
+        ),
+        stddev_calc AS (
+            SELECT STDDEV(spread) AS stddev FROM spread_data
+        )
+        SELECT 
+            (median_calc.median + stddev_calc.stddev) AS suggested_spread_threshold
+        FROM median_calc, stddev_calc;
+    "#;
+
+    let result: SpreadStats = sql_query(query)
+        .bind::<Text, _>(currency)
+        .get_result(conn)?;
+
+    Ok(result.suggested_spread_threshold)
 }
