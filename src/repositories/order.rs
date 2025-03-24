@@ -104,8 +104,6 @@ pub async fn post_market_order(
         if order.order_type == "sell" { 0 } else { 1 }
     });
 
-    println!("{:#?}", new_orders);
-
     let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
         if new_order.order_type == "buy" {
