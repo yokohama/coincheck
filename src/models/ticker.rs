@@ -118,6 +118,8 @@ pub async fn get_dynamic_spread_threshold(conn: &mut PgConnection, currency: &st
             SELECT STDDEV(spread) AS stddev FROM spread_data
         )
         SELECT 
+            median_calc.median AS median,
+            stddev_calc.stddev AS stddev,
             (median_calc.median + stddev_calc.stddev) AS suggested_spread_threshold
         FROM median_calc, stddev_calc;
     "#;
