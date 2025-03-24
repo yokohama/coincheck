@@ -101,7 +101,7 @@ pub async fn post_market_order(
 
     // 売りが先にくるようにソート
     new_orders.sort_by_key(|order| {
-        if order.order_type == "shell" { 0 } else { 1 }
+        if order.order_type == "sell" { 0 } else { 1 }
     });
 
     println!("{:#?}", new_orders);
