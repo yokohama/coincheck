@@ -99,6 +99,11 @@ pub async fn post_market_order(
     // 購入と判断した通貨毎に使えるJPYを等分
     let jpy_amount_per_currency = get_buy_ratio(jpy_balance, new_orders.len() as i32)?;
 
+    // 売りが先にくるようにソート
+    new_orders.sort_by_key(|order| {
+        if order.order_type == "shell" { 0 } else { 1 }
+    });
+
     let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
         if new_order.order_type == "buy" {
