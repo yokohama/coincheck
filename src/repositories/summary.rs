@@ -8,6 +8,7 @@ use crate::{
 };
 use crate::error::AppError;
 
+#[derive(Debug)]
 #[allow(dead_code)]
 pub struct Report {
     pub summary: models::summary::NewSummary,

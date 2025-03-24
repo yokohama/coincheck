@@ -1,7 +1,5 @@
 use std::env;
 use dotenvy::dotenv;
-use std::thread;
-use std::time::Duration;
 
 use log::{info, error};
 use simplelog::{Config, LevelFilter, SimpleLogger};
@@ -32,14 +30,14 @@ async fn run() -> Result<(), AppError> {
     let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
     let jpy_balance = repositories::balance::get_jpy_balance(&balancies)?;
 
-    info!("# balancies: {:#?}", balancies);
-    info!("# jpy_balance: {}", jpy_balance);
+    info!("#");
+    info!("# オーダー情報");
+    info!("#");
+    info!("balance: {:#?}", balancies);
 
     let mut new_orders: Vec<NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
         let ticker = api::coincheck::ticker::find(&client, &currency).await?;
-        thread::sleep(Duration::from_millis(500));
-
         let crypto_balance = repositories::balance::get_crypto_balance(&balancies, currency)?;
 
         let signal = repositories::order::determine_trade_signal(
@@ -79,14 +77,11 @@ async fn run() -> Result<(), AppError> {
         .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
 
     let jpy_amount = jpy_balance * buy_ratio;
-    info!("# jpy_amount: {}", jpy_amount);
     let jpy_amount_per_currency = jpy_amount / new_orders.len() as f64;
-    info!("# jpy_amount_per_currency: {}", jpy_amount_per_currency);
 
     for new_order in new_orders.iter_mut() {
         // buyの場合は各通貨に全体JPYの3割を等分する
         if new_order.order_type == "buy" {
-            info!("# buy: {}JPY", jpy_amount_per_currency);
             new_order.amount = jpy_amount_per_currency;
         };
 
@@ -95,14 +90,19 @@ async fn run() -> Result<(), AppError> {
             &client,
             new_order.clone()
         ).await?;
+
+        println!("#-- order: {:#?}", new_order);
     }
 
     if new_orders.len() > 0 {
         let report = repositories::summary::make_report(&mut conn, &client).await?;
+        info!("#-- summary: {:#?}", report);
         api::slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
     } else {
-        info!("# new_orders_count: {}", new_orders.len());
+        info!("#-- summary: オーダーなし");
     }
+
+    println!("");
 
     Ok(())
 }
