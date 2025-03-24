@@ -178,15 +178,11 @@ pub async fn determine_trade_signal(
 
     let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
     let spread_threshold = models::ticker::get_dynamic_spread_threshold(conn, currency).await?;
-    info!("#- spread_threshold: {}", spread_threshold);
     if spread_ratio > spread_threshold {
-
-    //let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
-    //if spread_ratio > spread_threshold {
-        // スプレッド負けするので見送り。
         return Ok(TradeSignal::Hold);
     }
 
+    info!("#- [{}], spread_threshold: {}", currency, spread_threshold);
     match (ma_short_avg, ma_long_avg) {
         (Some(short_avg), Some(long_avg)) => {
             if short_avg > long_avg {
