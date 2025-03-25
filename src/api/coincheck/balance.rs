@@ -16,5 +16,16 @@ pub async fn find(coincheck_client: &client::CoincheckClient) -> Result<Value, A
         .await?;
 
     client::sleep()?;
-    Ok(response.json().await?)
+
+    let mut json: serde_json::Value = response.json().await?;
+
+    /* 
+     * TODO: ウォレットからshibが消せないので、ここでハードコーディングで削除。
+     * 将来的に、ignore_currenciesのように変数化
+     */
+    if let Some(obj) = json.as_object_mut() {
+        obj.remove("shib");
+    }
+
+    Ok(json)
 }
