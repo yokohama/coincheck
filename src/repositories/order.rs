@@ -147,14 +147,24 @@ pub async fn post_market_order(
                     rate: Some(orderd_rate),
                     pair: orderd.get("pair").unwrap().to_string(),
                     order_type: orderd_type.to_string(),
-                    amount: orderd.get("market_buy_amount").unwrap().as_f64().unwrap(),
+                    amount: orderd.get("market_buy_amount")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .parse::<f64>()
+                        .unwrap(),
                 };
             } else {
                 models::order::NewOrder {
                     rate: Some(orderd_rate),
                     pair: orderd.get("pair").unwrap().to_string(),
                     order_type: orderd_type.to_string(),
-                    amount: orderd.get("amount").unwrap().as_f64().unwrap(),
+                    amount: orderd.get("amount")
+                        .unwrap()
+                        .as_str()
+                        .unwrap()
+                        .parse::<f64>()
+                        .unwrap(),
                 };
             };
             println!("hoge: {:#?}", hoge);
