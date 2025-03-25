@@ -136,6 +136,8 @@ pub async fn post_market_order(
             new_order.amount
         ).await?;
 
+        info!("{:#?}", orderd);
+
         if status.is_success() {
             let hoge = models::order::NewOrder {
                 rate: Some(orderd.get("rate").unwrap().as_f64().unwrap()),
