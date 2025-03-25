@@ -139,16 +139,18 @@ pub async fn post_market_order(
         info!("{:#?}", orderd);
 
         if status.is_success() {
+            /*
             let hoge = models::order::NewOrder {
                 rate: Some(orderd.get("rate").unwrap().as_f64().unwrap()),
                 pair: orderd.get("pair").unwrap().to_string(),
                 order_type: orderd.get("order_type").unwrap().to_string(),
                 amount: orderd.get("amount").unwrap().as_f64().unwrap(),
             };
-            //models::order::Order::create(conn, &new_order)?;
-            //slack::send_orderd_information(&new_order).await?;
-            models::order::Order::create(conn, &hoge)?;
-            slack::send_orderd_information(&hoge).await?;
+            */
+            models::order::Order::create(conn, &new_order)?;
+            slack::send_orderd_information(&new_order).await?;
+            //models::order::Order::create(conn, &hoge)?;
+            //slack::send_orderd_information(&hoge).await?;
             success_order_count += 1;
         }
 
