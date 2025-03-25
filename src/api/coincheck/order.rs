@@ -1,5 +1,6 @@
 use reqwest::Client;
 use serde::Serialize;
+use serde_json::Value;
 use log::{info, error};
 
 use crate::error::AppError;
@@ -30,7 +31,7 @@ pub async fn post_market_order(
     currency: &str,
     order_type: &str,
     amount: f64,
-) -> Result<reqwest::StatusCode, AppError> {
+) -> Result<(reqwest::StatusCode, Value), AppError> {
     let pair = format!("{}_jpy", currency);
 
     let order = match order_type {
@@ -59,16 +60,15 @@ pub async fn post_market_order(
         .await?;
 
     let status = res.status();
+    let body: Value = res.json().await?;
     if status.is_success() {
-        //let json: serde_json::Value = res.json().await?;
-        //info!("Order success: {:#?}", json);
+        info!("Status {}: {}", status, body);
         info!("{:#?}", order);
     } else {
-        let text = res.text().await?;
-        error!("Status {}: {}", status, text);
+        error!("Status {}: {}", status, body);
         error!("{:#?}", order);
     }
 
     client::sleep()?;
-    Ok(status)
+    Ok((status, body))
 }
