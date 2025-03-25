@@ -4,7 +4,7 @@ diesel::table! {
     orders (id) {
         id -> Int4,
         rate -> Float8,
-        amount -> Float8,
+        crypto_amount -> Float8,
         #[max_length = 255]
         order_type -> Varchar,
         #[max_length = 255]
@@ -13,6 +13,7 @@ diesel::table! {
         buy_rate -> Nullable<Float8>,
         sell_rate -> Nullable<Float8>,
         spread_ratio -> Nullable<Float8>,
+        jpy_amount -> Nullable<Float8>,
     }
 }
 

@@ -89,11 +89,12 @@ pub async fn post_market_order(
                 TradeSignal::MarcketBuy(amount) => {
                     let new_order = models::order::NewOrder {
                         rate: Some(0.0),
+                        buy_rate: Some(0.0),
+                        sell_rate: Some(0.0),
                         pair: currency.clone(),
                         order_type: "market_buy".to_string(),
-                        buy_rate: Some(0.0),
-                        amount,
-                        sell_rate: Some(0.0),
+                        jpy_amount: amount,
+                        crypto_amount: 0.0,
                         spread_ratio: Some(0.0),
                     };
                     new_orders.push(new_order);
@@ -101,11 +102,12 @@ pub async fn post_market_order(
                 TradeSignal::MarcketSell(amount) => {
                     let new_order = models::order::NewOrder {
                         rate: Some(0.0),
-                        pair: currency.clone(),
-                        order_type: "market_sell".to_string(),
-                        amount,
                         buy_rate: Some(0.0),
                         sell_rate: Some(0.0),
+                        pair: currency.clone(),
+                        order_type: "market_sell".to_string(),
+                        jpy_amount: 0.0,
+                        crypto_amount: amount,
                         spread_ratio: Some(0.0),
                     };
                     new_orders.push(new_order);
@@ -131,15 +133,20 @@ pub async fn post_market_order(
 
     let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
+
+        let mut amount = 0.0;
         if new_order.order_type == "market_buy" {
-            new_order.amount = jpy_amount_per_currency;
+            new_order.jpy_amount = jpy_amount_per_currency;
+            amount = jpy_amount_per_currency;
+        } else {
+            amount = new_order.crypto_amount;
         };
 
         let (status, _) = coincheck::order::post_market_order(
             client, 
             new_order.pair.as_str(), 
             new_order.order_type.as_str(),
-            new_order.amount
+            amount
         ).await?;
 
         if status.is_success() {

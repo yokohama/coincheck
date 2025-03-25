@@ -14,17 +14,17 @@ use crate::models::summary_record::NewSummaryRecord;
 pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppError> {
     dotenv().ok();
 
-    let text = if new_order.order_type == "buy" {
+    let text = if new_order.order_type == "market_buy" {
         format!(
             ":coin: *[{}][購入]* {}JPY",
             {new_order.pair.to_uppercase()},
-            {format!("{:.2}", new_order.amount)}
+            {format!("{:.2}", new_order.jpy_amount)}
         )
     } else {
         format!(
             ":coin: *[{}][売却]* {}",
             {new_order.pair.to_uppercase()},
-            {new_order.amount}
+            {new_order.crypto_amount}
         )
     };
 
