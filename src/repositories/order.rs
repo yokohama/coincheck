@@ -140,7 +140,8 @@ pub async fn post_market_order(
             info!("{:#?}", orderd);
             let orderd_type = orderd.get("order_type").unwrap().to_string();
             let orderd_rate = 0.0; // ここでrateを取得
-                                   //
+            println!("order_type: {:#?}", orderd_type);
+
             let hoge = if orderd_type == "market_buy" {
                 models::order::NewOrder {
                     rate: Some(orderd_rate),
