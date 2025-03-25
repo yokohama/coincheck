@@ -164,7 +164,8 @@ pub async fn post_market_order(
     }
 
     if success_order_count > 0 {
-        let report = repositories::summary::make_report(conn, &client).await?;
+        let mut report = repositories::summary::make_report(conn, &client).await?;
+        models::summary::Summary::create(conn, &report.summary, &mut report.summary_records)?;
         slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
     } else {
         info!("summary: オーダーなし");

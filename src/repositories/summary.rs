@@ -26,13 +26,7 @@ pub async fn reporing(
     let mut report = make_report(conn, &client).await?;
     models::summary::Summary::create(conn, &report.summary, &mut report.summary_records)?;
 
-    //let chart_path = make_chart()?;
-
-    api::slack::send_summary(
-        "本日のレポート", 
-        &report.summary, 
-        report.summary_records
-    ).await?;
+    api::slack::send_summary("本日のレポート", &report.summary, report.summary_records).await?;
 
     info!("Execute summary successful.");
     Ok(())
@@ -95,30 +89,3 @@ pub async fn make_report(
         summary_records: new_summary_records,
     })
 }
-
-/*
-fn make_chart() -> Result<PathBuf, AppError> {
-    let path = PathBuf::from("chart_images/line_chart.png");
-    let root = BitMapBackend::new(&path, (800, 600)).into_drawing_area();
-    root.fill(&WHITE).map_err(|e| AppError::InvalidData(format!("Plotting error: {}", e)))?;
-
-    let mut chart = ChartBuilder::on(&root)
-        .caption("Sample Line Chart", ("sans-serif", 40))
-        .margin(20)
-        .x_label_area_size(30)
-        .y_label_area_size(40)
-        .build_cartesian_2d(0..10, 0..100)
-        .map_err(|e| AppError::InvalidData(format!("Plotting error: {}", e)))?;
-
-    chart.configure_mesh()
-        .draw()
-        .map_err(|e| AppError::InvalidData(format!("Plotting error: {}", e)))?;
-
-    chart.draw_series(LineSeries::new(
-        (0..10).map(|x| (x, x * x)), // 適当なデータ
-        &RED,
-    )).map_err(|e| AppError::InvalidData(format!("Plotting error: {}", e)))?;
-
-    Ok(path.clone())
-}
-*/
