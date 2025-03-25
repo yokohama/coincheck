@@ -138,7 +138,7 @@ pub async fn post_market_order(
 
         if status.is_success() {
             info!("{:#?}", orderd);
-            let orderd_type = orderd.get("order_type").unwrap().to_string();
+            let orderd_type = orderd.get("order_type").unwrap().as_str().unwrap();
             let orderd_rate = 0.0; // ここでrateを取得
             println!("order_type: {:#?}", orderd_type);
 
@@ -146,14 +146,14 @@ pub async fn post_market_order(
                 models::order::NewOrder {
                     rate: Some(orderd_rate),
                     pair: orderd.get("pair").unwrap().to_string(),
-                    order_type: orderd_type,
+                    order_type: orderd_type.to_string(),
                     amount: orderd.get("market_buy_amount").unwrap().as_f64().unwrap(),
                 };
             } else {
                 models::order::NewOrder {
                     rate: Some(orderd_rate),
                     pair: orderd.get("pair").unwrap().to_string(),
-                    order_type: orderd_type,
+                    order_type: orderd_type.to_string(),
                     amount: orderd.get("amount").unwrap().as_f64().unwrap(),
                 };
             };
