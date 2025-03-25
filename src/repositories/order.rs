@@ -138,7 +138,25 @@ pub async fn post_market_order(
 
         info!("{:#?}", orderd);
 
+        let orderd_type = orderd.get("order_type").unwrap().to_string();
+        let orderd_rate = 0.0; // ここでrateを取得
         if status.is_success() {
+            let hoge = if orderd_type == "market_buy" {
+                models::order::NewOrder {
+                    rate: Some(orderd_rate),
+                    pair: orderd.get("pair").unwrap().to_string(),
+                    order_type: orderd.get("order_type").unwrap().to_string(),
+                    amount: orderd.get("market_buy_amount").unwrap().as_f64().unwrap(),
+                };
+            } else {
+                models::order::NewOrder {
+                    rate: Some(orderd_rate),
+                    pair: orderd.get("pair").unwrap().to_string(),
+                    order_type: orderd.get("order_type").unwrap().to_string(),
+                    amount: orderd.get("amount").unwrap().as_f64().unwrap(),
+                };
+            };
+            println!("hoge: {:#?}", hoge);
             /*
             let hoge = models::order::NewOrder {
                 rate: Some(orderd.get("rate").unwrap().as_f64().unwrap()),
