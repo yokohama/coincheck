@@ -146,14 +146,14 @@ pub async fn post_market_order(
                 models::order::NewOrder {
                     rate: Some(orderd_rate),
                     pair: orderd.get("pair").unwrap().to_string(),
-                    order_type: orderd.get("order_type").unwrap().to_string(),
+                    order_type: orderd_type,
                     amount: orderd.get("market_buy_amount").unwrap().as_f64().unwrap(),
                 };
             } else {
                 models::order::NewOrder {
                     rate: Some(orderd_rate),
                     pair: orderd.get("pair").unwrap().to_string(),
-                    order_type: orderd.get("order_type").unwrap().to_string(),
+                    order_type: orderd_type,
                     amount: orderd.get("amount").unwrap().as_f64().unwrap(),
                 };
             };
