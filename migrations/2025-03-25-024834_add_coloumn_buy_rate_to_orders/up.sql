@@ -1,0 +1,3 @@
+ALTER TABLE orders ADD COLUMN buy_rate FLOAT8;
+ALTER TABLE orders ADD COLUMN sell_rate FLOAT8;
+ALTER TABLE orders ADD COLUMN spread_ratio FLOAT8;

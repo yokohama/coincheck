@@ -90,8 +90,11 @@ pub async fn post_market_order(
                     let new_order = models::order::NewOrder {
                         rate: Some(0.0),
                         pair: currency.clone(),
-                        order_type: "buy".to_string(),
+                        order_type: "market_buy".to_string(),
+                        buy_rate: Some(0.0),
                         amount,
+                        sell_rate: Some(0.0),
+                        spread_ratio: Some(0.0),
                     };
                     new_orders.push(new_order);
                 },
@@ -99,8 +102,11 @@ pub async fn post_market_order(
                     let new_order = models::order::NewOrder {
                         rate: Some(0.0),
                         pair: currency.clone(),
-                        order_type: "sell".to_string(),
+                        order_type: "market_sell".to_string(),
                         amount,
+                        buy_rate: Some(0.0),
+                        sell_rate: Some(0.0),
+                        spread_ratio: Some(0.0),
                     };
                     new_orders.push(new_order);
                 },
@@ -125,11 +131,11 @@ pub async fn post_market_order(
 
     let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
-        if new_order.order_type == "buy" {
+        if new_order.order_type == "market_buy" {
             new_order.amount = jpy_amount_per_currency;
         };
 
-        let (status, orderd) = coincheck::order::post_market_order(
+        let (status, _) = coincheck::order::post_market_order(
             client, 
             new_order.pair.as_str(), 
             new_order.order_type.as_str(),
@@ -137,49 +143,13 @@ pub async fn post_market_order(
         ).await?;
 
         if status.is_success() {
-            info!("{:#?}", orderd);
-            let orderd_type = orderd.get("order_type").unwrap().as_str().unwrap();
-            let orderd_rate = 0.0; // ここでrateを取得
-            println!("order_type: {:#?}", orderd_type);
+            let orderd_rate = coincheck::rate::find(client, new_order.pair.as_str()).await?;
+            new_order.buy_rate = Some(orderd_rate.buy_rate);
+            new_order.sell_rate = Some(orderd_rate.sell_rate);
+            new_order.spread_ratio = Some(orderd_rate.spread_ratio);
 
-            let hoge = if orderd_type == "market_buy" {
-                models::order::NewOrder {
-                    rate: Some(orderd_rate),
-                    pair: orderd.get("pair").unwrap().to_string(),
-                    order_type: orderd_type.to_string(),
-                    amount: orderd.get("market_buy_amount")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .parse::<f64>()
-                        .unwrap(),
-                };
-            } else {
-                models::order::NewOrder {
-                    rate: Some(orderd_rate),
-                    pair: orderd.get("pair").unwrap().to_string(),
-                    order_type: orderd_type.to_string(),
-                    amount: orderd.get("amount")
-                        .unwrap()
-                        .as_str()
-                        .unwrap()
-                        .parse::<f64>()
-                        .unwrap(),
-                };
-            };
-            println!("hoge: {:#?}", hoge);
-            /*
-            let hoge = models::order::NewOrder {
-                rate: Some(orderd.get("rate").unwrap().as_f64().unwrap()),
-                pair: orderd.get("pair").unwrap().to_string(),
-                order_type: orderd.get("order_type").unwrap().to_string(),
-                amount: orderd.get("amount").unwrap().as_f64().unwrap(),
-            };
-            */
             models::order::Order::create(conn, &new_order)?;
             slack::send_orderd_information(&new_order).await?;
-            //models::order::Order::create(conn, &hoge)?;
-            //slack::send_orderd_information(&hoge).await?;
             success_order_count += 1;
         }
 

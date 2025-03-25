@@ -10,6 +10,9 @@ diesel::table! {
         #[max_length = 255]
         pair -> Varchar,
         created_at -> Timestamp,
+        buy_rate -> Nullable<Float8>,
+        sell_rate -> Nullable<Float8>,
+        spread_ratio -> Nullable<Float8>,
     }
 }
 

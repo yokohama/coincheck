@@ -15,6 +15,9 @@ pub struct Order {
     pub amount: f64,
     pub order_type: String,
     pub pari: f64,
+    pub buy_rate: Option<f64>,
+    pub sell_rate: Option<f64>,
+    pub spread_ratio: Option<f64>,
     pub created_at: NaiveDateTime,
 }
 
@@ -40,4 +43,7 @@ pub struct NewOrder {
     pub pair: String,
     pub order_type: String,
     pub amount: f64,
+    pub buy_rate: Option<f64>,
+    pub sell_rate: Option<f64>,
+    pub spread_ratio: Option<f64>,
 }

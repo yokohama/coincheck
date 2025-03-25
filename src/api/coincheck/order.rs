@@ -35,11 +35,11 @@ pub async fn post_market_order(
     let pair = format!("{}_jpy", currency);
 
     let order = match order_type {
-        "buy" => MarketOrderRequest::Buy {
+        "market_buy" => MarketOrderRequest::Buy {
             pair: pair.clone(),
             market_buy_amount: amount,
         },
-        "sell" => MarketOrderRequest::Sell {
+        "market_sell" => MarketOrderRequest::Sell {
             pair: pair.clone(),
             amount,
         },
