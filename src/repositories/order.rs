@@ -57,7 +57,7 @@ pub async fn post_market_order(
     info!("# オーダー情報");
     info!("#");
     info!("balance: {:#?}", balancies);
-    info!("");
+    println!("");
 
     let mut new_orders: Vec<models::order::NewOrder> = Vec::new();
     for currency in my_trading_currency.iter() {
