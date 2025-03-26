@@ -224,7 +224,6 @@ pub async fn determine_trade_signal(
         return Ok(TradeSignal::Hold);
     }
 
-    info!("#- [{}], spread_threshold: {}", currency, spread_threshold);
     match (ma_short_avg, ma_long_avg) {
         (Some(short_avg), Some(long_avg)) => {
             if short_avg > long_avg {
