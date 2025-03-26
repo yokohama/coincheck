@@ -160,7 +160,7 @@ pub async fn post_market_order(
             success_order_count += 1;
         }
 
-        info!("");
+        println!("");
     }
 
     if success_order_count > 0 {
@@ -224,7 +224,8 @@ pub async fn determine_trade_signal(
         return Ok(TradeSignal::Hold);
     }
 
-   info!("short_avg={:#?}, long_avg={:#?}", ma_short_avg, ma_long_avg);
+    // TODO: ちゃんとログ出てない
+    info!("short_avg={:#?}, long_avg={:#?}", ma_short_avg, ma_long_avg);
     match (ma_short_avg, ma_long_avg) {
         (Some(short_avg), Some(long_avg)) => {
             if short_avg > long_avg {
