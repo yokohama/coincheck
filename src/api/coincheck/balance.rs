@@ -25,6 +25,7 @@ pub async fn find(coincheck_client: &client::CoincheckClient) -> Result<Value, A
      */
     if let Some(obj) = json.as_object_mut() {
         obj.remove("shib");
+        obj.remove("eth");
     }
 
     Ok(json)
