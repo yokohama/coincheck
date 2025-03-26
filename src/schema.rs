@@ -14,7 +14,7 @@ diesel::table! {
         sell_rate -> Nullable<Float8>,
         spread_ratio -> Nullable<Float8>,
         jpy_amount -> Nullable<Float8>,
-        api_msg -> Nullable<Text>,
+        api_error_msg -> Nullable<Text>,
     }
 }
 
