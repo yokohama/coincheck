@@ -77,6 +77,18 @@ pub async fn post_market_order(
             }
         };
 
+       let mut new_order = models::order::NewOrder {
+           rate: Some(0.0),
+           buy_rate: Some(0.0),
+           sell_rate: Some(0.0),
+           pair: currency.clone(),
+           order_type: "".to_string(),
+           jpy_amount: 0.0,
+           crypto_amount: 0.0,
+           spread_ratio: Some(0.0),
+           api_error_msg: None,
+       };
+
         match determine_trade_signal(
             conn, 
             currency,
@@ -87,35 +99,25 @@ pub async fn post_market_order(
             Ok(s) => {
               match s {
                 TradeSignal::MarcketBuy(amount) => {
-                    let new_order = models::order::NewOrder {
-                        rate: Some(0.0),
-                        buy_rate: Some(0.0),
-                        sell_rate: Some(0.0),
-                        pair: currency.clone(),
-                        order_type: "market_buy".to_string(),
-                        jpy_amount: amount,
-                        crypto_amount: 0.0,
-                        spread_ratio: Some(0.0),
-                        api_error_msg: None,
-                    };
+                    new_order.order_type = "market_buy".to_string();
+                    new_order.jpy_amount = amount;
                     new_orders.push(new_order);
                 },
                 TradeSignal::MarcketSell(amount) => {
-                    let new_order = models::order::NewOrder {
-                        rate: Some(0.0),
-                        buy_rate: Some(0.0),
-                        sell_rate: Some(0.0),
-                        pair: currency.clone(),
-                        order_type: "market_sell".to_string(),
-                        jpy_amount: 0.0,
-                        crypto_amount: amount,
-                        spread_ratio: Some(0.0),
-                        api_error_msg: None,
-                    };
+                    new_order.order_type = "market_sell".to_string();
+                    new_order.crypto_amount = amount;
                     new_orders.push(new_order);
                 },
-                TradeSignal::Hold => {},
-                TradeSignal::InsufficientData => {},
+                TradeSignal::Hold => {
+                    let msg = format!("[{}]: スプレッド負けのためhold。", currency);
+                    new_order.api_error_msg = Some(msg.clone());
+                    info!("{}", msg);
+                },
+                TradeSignal::InsufficientData => {
+                    let msg = format!("[{}]: データ不足のためskip。", currency);
+                    new_order.api_error_msg = Some(msg.clone());
+                    info!("{}", msg);
+                },
               }
             },
             Err(e) => {
@@ -157,7 +159,6 @@ pub async fn post_market_order(
         new_order.spread_ratio = Some(orderd_rate.spread_ratio);
 
         if status.is_success() {
-            //models::order::Order::create(conn, &new_order)?;
             slack::send_orderd_information(&new_order).await?;
             success_order_count += 1;
         } else {
@@ -165,7 +166,6 @@ pub async fn post_market_order(
         }
 
         models::order::Order::create(conn, &new_order)?;
-
         println!("");
     }
 
