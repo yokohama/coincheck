@@ -96,6 +96,7 @@ pub async fn post_market_order(
                         jpy_amount: amount,
                         crypto_amount: 0.0,
                         spread_ratio: Some(0.0),
+                        api_msg: None,
                     };
                     new_orders.push(new_order);
                 },
@@ -109,6 +110,7 @@ pub async fn post_market_order(
                         jpy_amount: 0.0,
                         crypto_amount: amount,
                         spread_ratio: Some(0.0),
+                        api_msg: None,
                     };
                     new_orders.push(new_order);
                 },
@@ -149,21 +151,17 @@ pub async fn post_market_order(
             amount
         ).await?;
 
-        if status.is_success() {
-            let orderd_rate = coincheck::rate::find(client, new_order.pair.as_str()).await?;
-            new_order.buy_rate = Some(orderd_rate.buy_rate);
-            new_order.sell_rate = Some(orderd_rate.sell_rate);
-            new_order.spread_ratio = Some(orderd_rate.spread_ratio);
+        let orderd_rate = coincheck::rate::find(client, new_order.pair.as_str()).await?;
+        new_order.buy_rate = Some(orderd_rate.buy_rate);
+        new_order.sell_rate = Some(orderd_rate.sell_rate);
+        new_order.spread_ratio = Some(orderd_rate.spread_ratio);
+        new_order.api_msg = Some(body.to_string());
+        models::order::Order::create(conn, &new_order)?;
 
-            models::order::Order::create(conn, &new_order)?;
+        if status.is_success() {
+            //models::order::Order::create(conn, &new_order)?;
             slack::send_orderd_information(&new_order).await?;
             success_order_count += 1;
-        } else {
-            info!(">");
-            info!(">");
-            info!("{:#?}", body.get("error"));
-            info!(">");
-            info!(">");
         }
 
         println!("");

@@ -19,6 +19,7 @@ pub struct Order {
     pub buy_rate: Option<f64>,
     pub sell_rate: Option<f64>,
     pub spread_ratio: Option<f64>,
+    pub api_msg: Option<String>,
     pub created_at: NaiveDateTime,
 }
 
@@ -48,4 +49,5 @@ pub struct NewOrder {
     pub buy_rate: Option<f64>,
     pub sell_rate: Option<f64>,
     pub spread_ratio: Option<f64>,
+    pub api_msg: Option<String>,
 }
