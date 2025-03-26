@@ -155,14 +155,16 @@ pub async fn post_market_order(
         new_order.buy_rate = Some(orderd_rate.buy_rate);
         new_order.sell_rate = Some(orderd_rate.sell_rate);
         new_order.spread_ratio = Some(orderd_rate.spread_ratio);
-        new_order.api_error_msg = Some(body.to_string());
-        models::order::Order::create(conn, &new_order)?;
 
         if status.is_success() {
             //models::order::Order::create(conn, &new_order)?;
             slack::send_orderd_information(&new_order).await?;
             success_order_count += 1;
+        } else {
+            new_order.api_error_msg = Some(body.get("error").unwrap().to_string());
         }
+
+        models::order::Order::create(conn, &new_order)?;
 
         println!("");
     }
