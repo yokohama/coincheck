@@ -109,12 +109,14 @@ pub async fn post_market_order(
                     new_orders.push(new_order);
                 },
                 TradeSignal::Hold => {
+                    new_order.order_type = "hold".to_string();
                     let msg = format!("[{}]: スプレッド負けのためhold。", currency);
                     new_order.api_error_msg = Some(msg.clone());
                     new_orders.push(new_order);
                     info!("{}", msg);
                 },
                 TradeSignal::InsufficientData => {
+                    new_order.order_type = "insufficient_data".to_string();
                     let msg = format!("[{}]: データ不足のためskip。", currency);
                     new_order.api_error_msg = Some(msg.clone());
                     new_orders.push(new_order);
