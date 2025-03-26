@@ -142,7 +142,7 @@ pub async fn post_market_order(
             amount = new_order.crypto_amount;
         };
 
-        let (status, _) = coincheck::order::post_market_order(
+        let (status, body) = coincheck::order::post_market_order(
             client, 
             new_order.pair.as_str(), 
             new_order.order_type.as_str(),
@@ -158,6 +158,12 @@ pub async fn post_market_order(
             models::order::Order::create(conn, &new_order)?;
             slack::send_orderd_information(&new_order).await?;
             success_order_count += 1;
+        } else {
+            info!(">");
+            info!(">");
+            info!("{:#?}", body.get("error"));
+            info!(">");
+            info!(">");
         }
 
         println!("");
@@ -224,7 +230,6 @@ pub async fn determine_trade_signal(
         return Ok(TradeSignal::Hold);
     }
 
-    // TODO: ちゃんとログ出てない
     info!("short_avg={:#?}, long_avg={:#?}", ma_short_avg, ma_long_avg);
     match (ma_short_avg, ma_long_avg) {
         (Some(short_avg), Some(long_avg)) => {
