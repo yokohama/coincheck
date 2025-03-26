@@ -111,11 +111,13 @@ pub async fn post_market_order(
                 TradeSignal::Hold => {
                     let msg = format!("[{}]: スプレッド負けのためhold。", currency);
                     new_order.api_error_msg = Some(msg.clone());
+                    new_orders.push(new_order);
                     info!("{}", msg);
                 },
                 TradeSignal::InsufficientData => {
                     let msg = format!("[{}]: データ不足のためskip。", currency);
                     new_order.api_error_msg = Some(msg.clone());
+                    new_orders.push(new_order);
                     info!("{}", msg);
                 },
               }
@@ -142,8 +144,11 @@ pub async fn post_market_order(
         if new_order.order_type == "market_buy" {
             new_order.jpy_amount = jpy_amount_per_currency;
             amount = jpy_amount_per_currency;
-        } else {
+        } else if new_order.order_type == "market_sell" {
             amount = new_order.crypto_amount;
+        } else {
+            models::order::Order::create(conn, &new_order)?;
+            continue;
         };
 
         let (status, body) = coincheck::order::post_market_order(
