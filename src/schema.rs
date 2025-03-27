@@ -1,6 +1,20 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    optimized_mas (id) {
+        id -> Int4,
+        pair -> Text,
+        short_ma -> Int4,
+        long_ma -> Int4,
+        offset_minutes -> Int4,
+        win_rate_pct -> Nullable<Float8>,
+        total -> Nullable<Int4>,
+        wins -> Nullable<Int4>,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     orders (id) {
         id -> Int4,
         rate -> Float8,
@@ -74,6 +88,7 @@ diesel::table! {
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
+    optimized_mas,
     orders,
     summaries,
     summary_records,

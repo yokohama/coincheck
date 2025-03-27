@@ -3,6 +3,7 @@ mod api;
 mod schema;
 mod models;
 mod error;
+mod strategies;
 
 use dotenvy::dotenv;
 

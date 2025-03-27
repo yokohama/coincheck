@@ -1,5 +1,5 @@
 use std::env;
-use dotenvy::dotenv;
+//use dotenvy::dotenv;
 use log::{info, error};
 
 use diesel::prelude::*;
@@ -10,7 +10,11 @@ use crate::{
     models,
     error::AppError,
 };
-use diesel::sql_types::{Nullable, Double, Text, Integer};
+
+use crate::strategies::trade_signal::TradeSignal;
+use crate::strategies::strategy_trait::Strategy;
+use crate::strategies::basic::BasicStrategy;
+//use diesel::sql_types::{Nullable, Double, Text, Integer};
 
 /*
  * [cron]
@@ -28,21 +32,6 @@ use diesel::sql_types::{Nullable, Double, Text, Integer};
  * BUY_RATIO_3=0.5
  * SELL_RATIO=0.4
  */
-
-#[allow(dead_code)]
-pub enum TradeSignal {
-    MarcketBuy(f64),  //f64: buy amount
-    MarcketSell(f64), //f64: sell amount
-    Hold,
-    InsufficientData,
-}
-
-#[derive(QueryableByName)]
-#[allow(dead_code)]
-pub struct AvgResult {
-    #[diesel(sql_type = Nullable<Double>)]
-    avg: Option<f64>,
-}
 
 #[allow(dead_code)]
 pub async fn post_market_order(
@@ -89,46 +78,46 @@ pub async fn post_market_order(
            api_error_msg: None,
        };
 
-        match determine_trade_signal(
-            conn, 
-            currency,
-            ticker.bid,
-            ticker.ask,
-            crypto_balance,
-        ).await {
-            Ok(s) => {
-              match s {
-                TradeSignal::MarcketBuy(amount) => {
-                    new_order.order_type = "market_buy".to_string();
-                    new_order.jpy_amount = amount;
-                    new_orders.push(new_order);
-                },
-                TradeSignal::MarcketSell(amount) => {
-                    new_order.order_type = "market_sell".to_string();
-                    new_order.crypto_amount = amount;
-                    new_orders.push(new_order);
-                },
-                TradeSignal::Hold => {
-                    new_order.order_type = "hold".to_string();
-                    let msg = format!("[{}]: スプレッド負けのためhold。", currency);
-                    new_order.api_error_msg = Some(msg.clone());
-                    new_orders.push(new_order);
-                    info!("{}", msg);
-                },
-                TradeSignal::InsufficientData => {
-                    new_order.order_type = "insufficient_data".to_string();
-                    let msg = format!("[{}]: データ不足のためskip。", currency);
-                    new_order.api_error_msg = Some(msg.clone());
-                    new_orders.push(new_order);
-                    info!("{}", msg);
-                },
-              }
-            },
-            Err(e) => {
-                error!("#- [{}] signal取得失敗: {}", currency, e);
-                continue;
-            }
-        };
+       let strategy = BasicStrategy;
+
+       match strategy.determine_trade_signal(
+           conn, 
+           currency,
+           ticker.bid,
+           ticker.ask,
+           crypto_balance,
+       ).await {
+           Ok(s) => {
+             match s {
+               TradeSignal::MarcketBuy { amount, .. } => {
+                   new_order.order_type = "market_buy".to_string();
+                   new_order.jpy_amount = amount;
+                   new_orders.push(new_order);
+               },
+               TradeSignal::MarcketSell { amount, .. } => {
+                   new_order.order_type = "market_sell".to_string();
+                   new_order.crypto_amount = amount;
+                   new_orders.push(new_order);
+               },
+               TradeSignal::Hold { reason } => {
+                   new_order.order_type = "hold".to_string();
+                   new_order.api_error_msg = reason.clone();
+                   new_orders.push(new_order);
+                   info!("{}", reason.unwrap());
+               },
+               TradeSignal::InsufficientData { reason } => {
+                   new_order.order_type = "insufficient_data".to_string();
+                   new_order.api_error_msg = reason.clone();
+                   new_orders.push(new_order);
+                   info!("{}", reason.unwrap());
+               },
+             }
+           },
+           Err(e) => {
+               error!("#- [{}] signal取得失敗: {}", currency, e);
+               continue;
+           }
+       };
     };
 
     // 購入と判断した通貨毎に使えるJPYを等分
@@ -186,78 +175,6 @@ pub async fn post_market_order(
 
     println!("");
     Ok(())
-}
-
-#[allow(dead_code)]
-pub async fn determine_trade_signal(
-    conn: &mut PgConnection,
-    currency: &str,
-    current_bid: f64,
-    current_ask: f64,
-    crypto_balance: f64,
-) -> Result<TradeSignal, AppError> {
-    dotenv().ok();
-
-    let sma_short = env::var("MA_SHORT")?.parse::<i32>()
-        .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-
-    let sma_long = env::var("MA_LONG")?.parse::<i32>()
-        .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-
-    let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>().unwrap();
-
-    let periods = vec![sma_short, sma_long];
-    let mut results: Vec<Option<AvgResult>> = Vec::new();
-
-    for period in periods.iter() {
-        let ma: Option<AvgResult> = diesel::sql_query("
-            SELECT AVG(subquery.last) AS avg
-            FROM (
-                SELECT last
-                FROM tickers
-                WHERE pair = $1
-                ORDER BY timestamp DESC
-                LIMIT $2
-            ) AS subquery
-        ")
-        .bind::<Text, _>(currency)
-        .bind::<Integer, _>(period)
-        .get_result(conn)
-        .optional()?;
-
-        results.push(ma);
-    }
-
-    let ma_short_avg = results[0].as_ref().map(|r| r.avg).flatten();
-    let ma_long_avg = results[1].as_ref().map(|r| r.avg).flatten();
-
-    let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
-    let spread_threshold = models::ticker::get_dynamic_spread_threshold(conn, currency).await?;
-    if spread_ratio > spread_threshold {
-        return Ok(TradeSignal::Hold);
-    }
-
-    info!("short_avg={:#?}, long_avg={:#?}", ma_short_avg, ma_long_avg);
-    match (ma_short_avg, ma_long_avg) {
-        (Some(short_avg), Some(long_avg)) => {
-            if short_avg > long_avg {
-                // ゴールデンクロス
-                // 0.0の仮値をセット。
-                // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
-                Ok(TradeSignal::MarcketBuy(0.0))
-
-            } else if short_avg < long_avg {
-                // デッドクロス
-                // こちらは仮想通貨毎に売る量を決定できるので、ここでセット
-                let amount = crypto_balance * sell_ratio;
-                Ok(TradeSignal::MarcketSell(amount))
-
-            } else {
-                Ok(TradeSignal::Hold)
-            }
-        }
-        _ => Ok(TradeSignal::InsufficientData) // データ不足
-    }
 }
 
 /*
