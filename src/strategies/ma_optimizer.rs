@@ -56,12 +56,14 @@ impl Strategy for MaOptimizerStrategy {
     ) -> Result<TradeSignal, AppError> {
         dotenv().ok();
 
-        //TODO: 55.0ハードコーディング
+        //TODO: 60.0ハードコーディング
+        let ma_border_threshold_ratio = 60.0;
         let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, currency)? {
-            Some((short, long, win_rate)) if win_rate >= 55.0 => (short, long, win_rate),
+            Some((short, long, win_rate)) if win_rate >= ma_border_threshold_ratio => (short, long, win_rate),
             Some((short, long, win_rate)) => {
                 let reason = format!(
-                    "クロスの勝率低い(55.0%以下)ので見送り: short={}, long={}, win_rate={}", 
+                    "クロスの勝率低い({}%以下)ので見送り: short={}, long={}, win_rate={}", 
+                    ma_border_threshold_ratio,
                     short, 
                     long, 
                     win_rate);
