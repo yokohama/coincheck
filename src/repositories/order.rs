@@ -128,9 +128,6 @@ pub async fn post_market_order(
 
     let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
-        info!("{:#?}", new_order);
-        println!("");
-
         let amount;
         if new_order.order_type == "market_buy" {
             new_order.jpy_amount = jpy_amount_per_currency;
@@ -153,6 +150,9 @@ pub async fn post_market_order(
         new_order.buy_rate = Some(orderd_rate.buy_rate);
         new_order.sell_rate = Some(orderd_rate.sell_rate);
         new_order.spread_ratio = Some(orderd_rate.spread_ratio);
+
+        info!("{:#?}", new_order);
+        println!("");
 
         if status.is_success() {
             slack::send_orderd_information(&new_order).await?;
