@@ -176,6 +176,9 @@ impl OptimizedMa {
             }
         }
 
+        diesel::sql_query("DELETE FROM optimized_mas WHERE created_at < NOW() - INTERVAL '1h'")
+            .execute(conn)?;
+
         Ok(())
     }
 }
