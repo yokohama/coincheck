@@ -56,7 +56,7 @@ impl Strategy for MaOptimizerStrategy {
     ) -> Result<TradeSignal, AppError> {
         dotenv().ok();
 
-        let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, "btc")? {
+        let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, currency)? {
             Some((short, long, win_rate)) => (short, long, win_rate),
             None => return Ok(TradeSignal::Hold { reason: Some("ベストなmaなし".to_string()) }),
         };
@@ -103,15 +103,19 @@ impl Strategy for MaOptimizerStrategy {
         match (ma_short_avg, ma_long_avg) {
             (Some(short_avg), Some(long_avg)) => {
                 if short_avg > long_avg {
-                    // ゴールデンクロス
-                    // 0.0の仮値をセット。
+                    // ゴールデンクロス(0.0の仮値をセット)
                     // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
                     Ok(TradeSignal::MarcketBuy { amount: 0.0, reason: None })
     
                 } else if short_avg < long_avg {
                     // デッドクロス
                     // こちらは仮想通貨毎に売る量を決定できるので、ここでセット
+                    // TODO: マジックナンバー。0.001はbtc最低売却量のthreshold。マップでもたせる。
                     let amount = crypto_balance * sell_ratio;
+                    if amount < 0.001 {
+                        let reason = format!("最低売却量未満: {}", amount);
+                        return Ok(TradeSignal::Hold { reason: Some(reason) })
+                    }
                     Ok(TradeSignal::MarcketSell { amount, reason: None })
     
                 } else {
