@@ -54,8 +54,6 @@ impl OptimizedMa {
             optimized_mas, 
             pair, 
             win_rate_pct,
-            short_ma,
-            long_ma
         };
 
         let result = optimized_mas

@@ -129,7 +129,7 @@ pub async fn post_market_order(
     let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
 
-        let mut amount = 0.0;
+        let amount;
         if new_order.order_type == "market_buy" {
             new_order.jpy_amount = jpy_amount_per_currency;
             amount = jpy_amount_per_currency;

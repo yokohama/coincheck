@@ -41,7 +41,7 @@ pub async fn send_orderd_information(new_order: &NewOrder) -> Result<(), AppErro
         ]
     });
 
-    let res = client.post(url).json(&payload).send().await?;
+    let _res = client.post(url).json(&payload).send().await?;
 
     Ok(())
 }
@@ -83,7 +83,7 @@ pub async fn send_summary(
 	    ]
     });
 
-    let res = client.post(&url).json(&payload).send().await?.error_for_status()?;
+    let _res = client.post(&url).json(&payload).send().await?.error_for_status()?;
 
     Ok(())
 }
