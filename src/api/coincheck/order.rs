@@ -63,10 +63,10 @@ pub async fn post_market_order(
     let body: Value = res.json().await?;
     if status.is_success() {
         info!("Status {}: {}", status, body);
-        info!("{:#?}", order);
+        //info!("{:#?}", order);
     } else {
         error!("Status {}: {}", status, body);
-        error!("{:#?}", order);
+        //error!("{:#?}", order);
     }
 
     client::sleep()?;

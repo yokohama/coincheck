@@ -128,6 +128,8 @@ pub async fn post_market_order(
 
     let mut success_order_count = 0;
     for new_order in new_orders.iter_mut() {
+        info!("{:#?}", new_order);
+        println!("");
 
         let amount;
         if new_order.order_type == "market_buy" {
