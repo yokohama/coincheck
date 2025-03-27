@@ -56,8 +56,17 @@ impl Strategy for MaOptimizerStrategy {
     ) -> Result<TradeSignal, AppError> {
         dotenv().ok();
 
+        //TODO: 55.0ハードコーディング
         let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, currency)? {
-            Some((short, long, win_rate)) => (short, long, win_rate),
+            Some((short, long, win_rate)) if win_rate >= 55.0 => (short, long, win_rate),
+            Some((short, long, win_rate)) => {
+                let reason = format!(
+                    "クロスの勝率低い(55.0%以下)ので見送り: short={}, long={}, win_rate={}", 
+                    short, 
+                    long, 
+                    win_rate);
+                return Ok(TradeSignal::Hold { reason: Some(reason) });
+            },
             None => return Ok(TradeSignal::Hold { reason: Some("ベストなmaなし".to_string()) }),
         };
 
