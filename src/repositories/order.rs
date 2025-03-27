@@ -101,13 +101,13 @@ pub async fn post_market_order(
                    new_order.order_type = "hold".to_string();
                    new_order.api_error_msg = reason.clone();
                    new_orders.push(new_order);
-                   info!("{}", reason.unwrap());
+                   //info!("{}", reason.unwrap());
                },
                TradeSignal::InsufficientData { reason } => {
                    new_order.order_type = "insufficient_data".to_string();
                    new_order.api_error_msg = reason.clone();
                    new_orders.push(new_order);
-                   info!("{}", reason.unwrap());
+                   //info!("{}", reason.unwrap());
                },
              }
            },
