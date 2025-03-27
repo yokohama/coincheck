@@ -1,5 +1,4 @@
 use std::env;
-//use dotenvy::dotenv;
 use log::{info, error};
 
 use diesel::prelude::*;
@@ -13,8 +12,7 @@ use crate::{
 
 use crate::strategies::trade_signal::TradeSignal;
 use crate::strategies::strategy_trait::Strategy;
-use crate::strategies::basic::BasicStrategy;
-//use diesel::sql_types::{Nullable, Double, Text, Integer};
+use crate::strategies::ma_optimizer::MaOptimizerStrategy;
 
 /*
  * [cron]
@@ -78,10 +76,10 @@ pub async fn post_market_order(
            api_error_msg: None,
        };
 
-       let strategy = BasicStrategy;
+       let strategy = MaOptimizerStrategy;
 
        match strategy.determine_trade_signal(
-           conn, 
+           conn,
            currency,
            ticker.bid,
            ticker.ask,

@@ -52,13 +52,14 @@ impl Strategy for MaOptimizerStrategy {
         crypto_balance: f64,
     ) -> Result<TradeSignal, AppError> {
         dotenv().ok();
-    
-        let sma_short = env::var("MA_SHORT")?.parse::<i32>()
-            .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-    
-        let sma_long = env::var("MA_LONG")?.parse::<i32>()
-            .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-    
+
+        let (sma_short, sma_long) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, "btc")? {
+            Some((short, long)) => (short, long),
+            None => return Ok(TradeSignal::Hold { reason: Some("ベストなmaなし".to_string()) }),
+        };
+
+        info!("#- crossover: short={}, long={}", sma_short, sma_long);
+
         let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>().unwrap();
     
         let periods = vec![sma_short, sma_long];

@@ -27,9 +27,9 @@ pub struct OptimizedMa {
     pub short_ma: i32,
     pub long_ma: i32,
     pub offset_minutes: i32,
-    pub win_rate_pct: f64,
-    pub total: i32,
-    pub wins: i32,
+    pub win_rate_pct: Option<f64>,
+    pub total: Option<i32>,
+    pub wins: Option<i32>,
     pub created_at: NaiveDateTime,
 }
 
@@ -46,6 +46,31 @@ pub struct NewOptimizedMa {
 }
 
 impl OptimizedMa {
+    pub fn find_best_for_ma(
+        conn: &mut PgConnection,
+        pair_str: &str,
+    ) -> Result<Option<(i32, i32)>, AppError> {
+        use crate::schema::optimized_mas::dsl::{
+            optimized_mas, 
+            pair, 
+            win_rate_pct,
+            short_ma, long_ma
+        };
+
+        let result = optimized_mas
+            .filter(pair.eq(pair_str))
+            .filter(win_rate_pct.ge(50.0))
+            .order(win_rate_pct.desc())
+            .first::<OptimizedMa>(conn)
+            .optional()?;
+
+        if let Some(record) = result {
+            Ok(Some((record.short_ma, record.long_ma)))
+        } else {
+            Ok(None)
+        }
+    }
+
     #[allow(dead_code)]
     pub fn create(
         conn: &mut PgConnection, 
@@ -154,4 +179,3 @@ impl OptimizedMa {
         Ok(())
     }
 }
-
