@@ -49,12 +49,13 @@ impl OptimizedMa {
     pub fn find_best_for_ma(
         conn: &mut PgConnection,
         pair_str: &str,
-    ) -> Result<Option<(i32, i32)>, AppError> {
+    ) -> Result<Option<(i32, i32, f64)>, AppError> {
         use crate::schema::optimized_mas::dsl::{
             optimized_mas, 
             pair, 
             win_rate_pct,
-            short_ma, long_ma
+            short_ma,
+            long_ma
         };
 
         let result = optimized_mas
@@ -65,7 +66,7 @@ impl OptimizedMa {
             .optional()?;
 
         if let Some(record) = result {
-            Ok(Some((record.short_ma, record.long_ma)))
+            Ok(Some((record.short_ma, record.long_ma, record.win_rate_pct.unwrap())))
         } else {
             Ok(None)
         }

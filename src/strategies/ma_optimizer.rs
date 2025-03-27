@@ -17,9 +17,12 @@ use crate::{
 };
 
 /*
+ * [strategy]
+ * optimized_masテーブルから勝率の高い、ma_shortとma_longを読み込んでcrossoverを計算。
+ *
  * [cron]
  * 2分毎に、cargo run --bin ticker_fetcherを実行して、tickersに情報を蓄積
- * 30毎に、cargo run --bin orderを実行して、注文
+ * 15毎に、cargo run --bin orderを実行して、注文
  * 
  * [envの設定]
  * BUY_THRESHOLD_1=20000
@@ -53,12 +56,12 @@ impl Strategy for MaOptimizerStrategy {
     ) -> Result<TradeSignal, AppError> {
         dotenv().ok();
 
-        let (sma_short, sma_long) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, "btc")? {
-            Some((short, long)) => (short, long),
+        let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, "btc")? {
+            Some((short, long, win_rate)) => (short, long, win_rate),
             None => return Ok(TradeSignal::Hold { reason: Some("ベストなmaなし".to_string()) }),
         };
 
-        info!("#- crossover: short={}, long={}", sma_short, sma_long);
+        info!("#- crossover: short={}, long={}, win_rate={}", sma_short, sma_long, win_rate_pct);
 
         let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>().unwrap();
     

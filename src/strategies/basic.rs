@@ -1,6 +1,5 @@
 use std::env;
 use dotenvy::dotenv;
-use log::info;
 
 use async_trait::async_trait;
 
@@ -17,9 +16,12 @@ use crate::{
 };
 
 /*
+ * [strategy]
+ * envから、ma_shortとma_longを読み込んでcrossoverを計算。
+ *
  * [cron]
  * 2分毎に、cargo run --bin ticker_fetcherを実行して、tickersに情報を蓄積
- * 30毎に、cargo run --bin orderを実行して、注文
+ * 15毎に、cargo run --bin orderを実行して、注文
  * 
  * [envの設定]
  * MA_SHORT=10
