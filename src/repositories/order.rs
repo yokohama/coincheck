@@ -151,7 +151,11 @@ pub async fn post_market_order(
         new_order.sell_rate = Some(orderd_rate.sell_rate);
         new_order.spread_ratio = Some(orderd_rate.spread_ratio);
 
-        info!("{:#?}", new_order);
+        info!("#-- [ {} ]", new_order.order_type);
+        info!("# pair: {}", new_order.pair);
+        info!("# crypt_amount: {}", new_order.crypto_amount);
+        info!("# jpy_amount: {}", new_order.jpy_amount);
+        info!("# api_error_msg: {:?}", new_order.api_error_msg);
         println!("");
 
         if status.is_success() {
@@ -162,7 +166,6 @@ pub async fn post_market_order(
         }
 
         models::order::Order::create(conn, &new_order)?;
-        println!("");
     }
 
     if success_order_count > 0 {
@@ -173,7 +176,6 @@ pub async fn post_market_order(
         info!("summary: オーダーなし");
     }
 
-    println!("");
     Ok(())
 }
 
