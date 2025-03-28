@@ -73,7 +73,7 @@ pub async fn post_market_order(
            jpy_amount: 0.0,
            crypto_amount: 0.0,
            spread_ratio: Some(0.0),
-           api_error_msg: None,
+           comment: None,
        };
 
        let strategy = MaOptimizerStrategy;
@@ -99,13 +99,13 @@ pub async fn post_market_order(
                },
                TradeSignal::Hold { reason } => {
                    new_order.order_type = "hold".to_string();
-                   new_order.api_error_msg = reason.clone();
+                   new_order.comment = reason.clone();
                    new_orders.push(new_order);
                    //info!("{}", reason.unwrap());
                },
                TradeSignal::InsufficientData { reason } => {
                    new_order.order_type = "insufficient_data".to_string();
-                   new_order.api_error_msg = reason.clone();
+                   new_order.comment = reason.clone();
                    new_orders.push(new_order);
                    //info!("{}", reason.unwrap());
                },
@@ -135,6 +135,9 @@ pub async fn post_market_order(
         } else if new_order.order_type == "market_sell" {
             amount = new_order.crypto_amount;
         } else {
+            info!("#-- [ {} ]", new_order.order_type);
+            info!("# comment: {:?}", new_order.comment);
+            println!("");
             models::order::Order::create(conn, &new_order)?;
             continue;
         };
@@ -155,14 +158,14 @@ pub async fn post_market_order(
         info!("# pair: {}", new_order.pair);
         info!("# crypt_amount: {}", new_order.crypto_amount);
         info!("# jpy_amount: {}", new_order.jpy_amount);
-        info!("# api_error_msg: {:?}", new_order.api_error_msg);
+        info!("# comment: {:?}", new_order.comment);
         println!("");
 
         if status.is_success() {
             slack::send_orderd_information(&new_order).await?;
             success_order_count += 1;
         } else {
-            new_order.api_error_msg = Some(body.get("error").unwrap().to_string());
+            new_order.comment = Some(body.get("error").unwrap().to_string());
         }
 
         models::order::Order::create(conn, &new_order)?;
