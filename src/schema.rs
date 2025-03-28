@@ -29,6 +29,8 @@ diesel::table! {
         spread_ratio -> Nullable<Float8>,
         jpy_amount -> Nullable<Float8>,
         comment -> Nullable<Text>,
+        spread_threshold -> Nullable<Float8>,
+        api_call_success_at -> Nullable<Timestamp>,
     }
 }
 

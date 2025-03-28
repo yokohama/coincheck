@@ -116,7 +116,8 @@ impl Strategy for MaOptimizerStrategy {
                 if short_avg > long_avg {
                     // ゴールデンクロス(0.0の仮値をセット)
                     // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
-                    Ok(TradeSignal::MarcketBuy { amount: 0.0, reason: None })
+                    let reason = format!("jpy_amount分{}を購入", currency);
+                    Ok(TradeSignal::MarcketBuy { amount: 0.0, reason: Some(reason) })
     
                 } else if short_avg < long_avg {
                     // デッドクロス
@@ -127,7 +128,8 @@ impl Strategy for MaOptimizerStrategy {
                         let reason = format!("最低売却量未満: {}", amount);
                         return Ok(TradeSignal::Hold { reason: Some(reason) })
                     }
-                    Ok(TradeSignal::MarcketSell { amount, reason: None })
+                    let reason = format!("{}{}を売却", amount, currency);
+                    Ok(TradeSignal::MarcketSell { amount, reason: Some(reason) })
     
                 } else {
                     let reason = format!(

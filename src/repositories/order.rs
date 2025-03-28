@@ -4,10 +4,7 @@ use log::{info, error};
 use diesel::prelude::*;
 
 use crate::{
-    api::{coincheck, slack},
-    repositories,
-    models,
-    error::AppError,
+    api::{coincheck, slack}, error::AppError, models::{self, order::NewOrder}, repositories
 };
 
 use crate::strategies::trade_signal::TradeSignal;
@@ -64,58 +61,36 @@ pub async fn post_market_order(
             }
         };
 
-       let mut new_order = models::order::NewOrder {
-           rate: Some(0.0),
-           buy_rate: Some(0.0),
-           sell_rate: Some(0.0),
-           pair: currency.clone(),
-           order_type: "".to_string(),
-           jpy_amount: 0.0,
-           crypto_amount: 0.0,
-           spread_ratio: Some(0.0),
-           comment: None,
-       };
+        let mut new_order = models::order::NewOrder::new(currency.clone());
 
-       let strategy = MaOptimizerStrategy;
+        let strategy = MaOptimizerStrategy;
+        match strategy.determine_trade_signal(
+            conn,
+            currency,
+            ticker.bid,
+            ticker.ask,
+            crypto_balance,
+        ).await {
+            Ok(signal) => {
+                let (order_type, jpy_amount, crypto_amount, comment) = match signal {
+                    TradeSignal::MarcketBuy { amount, reason } => ("market_buy", amount, 0.0, reason.clone()),
+                    TradeSignal::MarcketSell { amount, reason } => ("market_sell", 0.0, amount, reason.clone()),
+                    TradeSignal::Hold { reason } => ("hold", 0.0, 0.0, reason.clone()),
+                    TradeSignal::InsufficientData { reason } => ("insufficient_data", 0.0, 0.0, reason.clone()),
+                };
 
-       match strategy.determine_trade_signal(
-           conn,
-           currency,
-           ticker.bid,
-           ticker.ask,
-           crypto_balance,
-       ).await {
-           Ok(s) => {
-             match s {
-               TradeSignal::MarcketBuy { amount, .. } => {
-                   new_order.order_type = "market_buy".to_string();
-                   new_order.jpy_amount = amount;
-                   new_orders.push(new_order);
-               },
-               TradeSignal::MarcketSell { amount, .. } => {
-                   new_order.order_type = "market_sell".to_string();
-                   new_order.crypto_amount = amount;
-                   new_orders.push(new_order);
-               },
-               TradeSignal::Hold { reason } => {
-                   new_order.order_type = "hold".to_string();
-                   new_order.comment = reason.clone();
-                   new_orders.push(new_order);
-                   //info!("{}", reason.unwrap());
-               },
-               TradeSignal::InsufficientData { reason } => {
-                   new_order.order_type = "insufficient_data".to_string();
-                   new_order.comment = reason.clone();
-                   new_orders.push(new_order);
-                   //info!("{}", reason.unwrap());
-               },
-             }
-           },
-           Err(e) => {
-               error!("#- [{}] signal取得失敗: {}", currency, e);
-               continue;
-           }
-       };
+                new_order.order_type = order_type.to_string();
+                new_order.jpy_amount = jpy_amount;
+                new_order.crypto_amount = crypto_amount;
+                new_order.comment = comment;
+
+                new_orders.push(new_order);
+            },
+            Err(e) => {
+                error!("#- [{}] signal取得失敗: {}", currency, e);
+                continue;
+            }
+        };
     };
 
     // 購入と判断した通貨毎に使えるJPYを等分
@@ -127,7 +102,7 @@ pub async fn post_market_order(
     });
 
     let mut success_order_count = 0;
-    for new_order in new_orders.iter_mut() {
+    for mut new_order in new_orders.iter_mut() {
         let amount;
         if new_order.order_type == "market_buy" {
             new_order.jpy_amount = jpy_amount_per_currency;
@@ -135,42 +110,46 @@ pub async fn post_market_order(
         } else if new_order.order_type == "market_sell" {
             amount = new_order.crypto_amount;
         } else {
-            info!("#-- [ {} ]", new_order.order_type);
-            info!("# comment: {:?}", new_order.comment);
-            println!("");
+            print_log(&new_order);
             models::order::Order::create(conn, &new_order)?;
             continue;
         };
 
-        let (status, body) = coincheck::order::post_market_order(
-            client, 
-            new_order.pair.as_str(), 
-            new_order.order_type.as_str(),
-            amount
-        ).await?;
+        let mut api_called_order = coincheck::order::post_market_order(client, &mut new_order, amount).await?;
 
-        let orderd_rate = coincheck::rate::find(client, new_order.pair.as_str()).await?;
-        new_order.buy_rate = Some(orderd_rate.buy_rate);
-        new_order.sell_rate = Some(orderd_rate.sell_rate);
-        new_order.spread_ratio = Some(orderd_rate.spread_ratio);
+        if api_called_order.api_call_success_at.is_some() {
+            slack::send_orderd_information(&api_called_order).await?;
 
-        info!("#-- [ {} ]", new_order.order_type);
-        info!("# pair: {}", new_order.pair);
-        info!("# crypt_amount: {}", new_order.crypto_amount);
-        info!("# jpy_amount: {}", new_order.jpy_amount);
-        info!("# comment: {:?}", new_order.comment);
-        println!("");
+            let orderd_rate = coincheck::rate::find(client, api_called_order.pair.as_str()).await?;
+            api_called_order.buy_rate = Some(orderd_rate.buy_rate);
+            api_called_order.sell_rate = Some(orderd_rate.sell_rate);
+            api_called_order.spread_ratio = Some(orderd_rate.spread_ratio);
 
-        if status.is_success() {
-            slack::send_orderd_information(&new_order).await?;
             success_order_count += 1;
-        } else {
-            new_order.comment = Some(body.get("error").unwrap().to_string());
         }
 
+        print_log(&new_order);
         models::order::Order::create(conn, &new_order)?;
     }
 
+    make_summary(success_order_count, conn, client).await?;
+    Ok(())
+}
+
+fn print_log(new_order: &NewOrder) {
+    info!("#-- [ {} ]", new_order.order_type);
+    info!("# pair: {}", new_order.pair);
+    info!("# crypt_amount: {}", new_order.crypto_amount);
+    info!("# jpy_amount: {}", new_order.jpy_amount);
+    info!("# comment: {:?}", new_order.comment);
+    println!("");
+}
+
+async fn make_summary(
+    success_order_count: u32,
+    conn: &mut PgConnection, 
+    client: &coincheck::client::CoincheckClient
+) -> Result<(), AppError> {
     if success_order_count > 0 {
         let mut report = repositories::summary::make_report(conn, &client).await?;
         models::summary::Summary::create(conn, &report.summary, &mut report.summary_records)?;

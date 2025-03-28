@@ -1,3 +1,5 @@
+use chrono::Utc;
+
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::Value;
@@ -8,6 +10,7 @@ use crate::api::coincheck::{
     client,
     private,
 };
+use crate::models::order::NewOrder;
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "order_type")]
@@ -28,13 +31,17 @@ pub enum MarketOrderRequest {
 
 pub async fn post_market_order(
     coincheck_client: &client::CoincheckClient,
+    /*
     currency: &str,
     order_type: &str,
     amount: f64,
-) -> Result<(reqwest::StatusCode, Value), AppError> {
-    let pair = format!("{}_jpy", currency);
+    */
+    new_order: &mut NewOrder,
+    amount: f64,
+) -> Result<NewOrder, AppError> {
+    let pair = format!("{}_jpy", new_order.pair);
 
-    let order = match order_type {
+    let order = match new_order.order_type.as_str() {
         "market_buy" => MarketOrderRequest::Buy {
             pair: pair.clone(),
             market_buy_amount: amount,
@@ -61,14 +68,17 @@ pub async fn post_market_order(
 
     let status = res.status();
     let body: Value = res.json().await?;
+
+    new_order.api_call_success_at = Some(Utc::now().naive_utc());
+    let comment = format!("{}, [{}]: {}", new_order.comment.take().unwrap(), status, body);
+    new_order.comment = Some(comment);
+
     if status.is_success() {
         info!("Status {}: {}", status, body);
-        //info!("{:#?}", order);
     } else {
         error!("Status {}: {}", status, body);
-        //error!("{:#?}", order);
     }
 
     client::sleep()?;
-    Ok((status, body))
+    Ok(new_order.clone())
 }

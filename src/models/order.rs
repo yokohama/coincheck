@@ -19,7 +19,9 @@ pub struct Order {
     pub buy_rate: Option<f64>,
     pub sell_rate: Option<f64>,
     pub spread_ratio: Option<f64>,
+    pub spread_threshold: Option<f64>,
     pub comment: Option<String>,
+    pub api_call_success_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
 }
 
@@ -49,5 +51,25 @@ pub struct NewOrder {
     pub buy_rate: Option<f64>,
     pub sell_rate: Option<f64>,
     pub spread_ratio: Option<f64>,
+    pub spread_threshold: Option<f64>,
     pub comment: Option<String>,
+    pub api_call_success_at: Option<NaiveDateTime>,
+}
+
+impl NewOrder {
+    pub fn new(pair_str: String) -> Self {
+        Self {
+            rate: Some(0.0),
+            buy_rate: Some(0.0),
+            sell_rate: Some(0.0),
+            pair: pair_str,
+            order_type: "".to_string(),
+            jpy_amount: 0.0,
+            crypto_amount: 0.0,
+            spread_ratio: Some(0.0),
+            spread_threshold: Some(0.0),
+            comment: None,
+            api_call_success_at: None,
+        }
+    }
 }
