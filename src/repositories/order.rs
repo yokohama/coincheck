@@ -73,9 +73,11 @@ pub async fn post_market_order(
             crypto_balance,
         ).await {
             Ok(signal) => {
-                let (order_type, ma_short, ma_long, ma_win_rate, jpy_amount, crypto_amount, comment) = match signal {
-                    TradeSignal::MarcketBuy { ma_short, ma_long, ma_win_rate, amount, reason } => (
+                let (order_type, spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, jpy_amount, crypto_amount, comment) = match signal {
+                    TradeSignal::MarcketBuy { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, amount, reason } => (
                         "market_buy",
+                        spread_threshold,
+                        spread_ratio,
                         ma_short,
                         ma_long,
                         ma_win_rate,
@@ -83,8 +85,10 @@ pub async fn post_market_order(
                         0.0,
                         reason.clone()
                     ),
-                    TradeSignal::MarcketSell { ma_short, ma_long, ma_win_rate, amount, reason } => (
+                    TradeSignal::MarcketSell { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, amount, reason } => (
                         "market_sell",
+                        spread_threshold,
+                        spread_ratio,
                         ma_short,
                         ma_long,
                         ma_win_rate,
@@ -92,8 +96,10 @@ pub async fn post_market_order(
                         amount,
                         reason.clone()
                     ),
-                    TradeSignal::Hold { ma_short, ma_long, ma_win_rate, reason } => (
+                    TradeSignal::Hold { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, reason } => (
                         "hold",
+                        spread_threshold,
+                        spread_ratio,
                         ma_short,
                         ma_long,
                         ma_win_rate,
@@ -101,8 +107,10 @@ pub async fn post_market_order(
                         0.0,
                         reason.clone()
                     ),
-                    TradeSignal::InsufficientData { ma_short, ma_long, ma_win_rate, reason } => (
+                    TradeSignal::InsufficientData { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, reason } => (
                         "insufficient_data",
+                        spread_threshold,
+                        spread_ratio,
                         ma_short,
                         ma_long,
                         ma_win_rate,
@@ -113,6 +121,8 @@ pub async fn post_market_order(
                 };
 
                 new_order.order_type = order_type.to_string();
+                new_order.spread_threshold = spread_threshold;
+                new_order.spread_ratio = spread_ratio;
                 new_order.ma_short = ma_short;
                 new_order.ma_long = ma_long;
                 new_order.ma_win_rate = ma_win_rate;

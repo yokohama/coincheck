@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel::sql_types::{Nullable, Double, Text, Integer};
 
-use crate::schema::optimized_mas::win_rate_pct;
 use crate::{
     models,
     error::AppError,
@@ -91,18 +90,16 @@ impl Strategy for BasicStrategy {
         let ma_short_avg = results[0].as_ref().map(|r| r.avg).flatten();
         let ma_long_avg = results[1].as_ref().map(|r| r.avg).flatten();
     
-        let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
-        let spread_threshold = models::ticker::get_dynamic_spread_threshold(conn, currency).await?;
-        if spread_ratio > spread_threshold {
-            let reason = format!(
-                "スプレッド負け: spread_ratio={} spread_threshold={}", 
-                spread_ratio, 
-                spread_threshold);
+        let a_spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
+        let a_spread_threshold = models::ticker::get_dynamic_spread_threshold(conn, currency).await?;
+        if a_spread_ratio > a_spread_threshold {
             return Ok(TradeSignal::Hold { 
+                spread_threshold: Some(a_spread_threshold),
+                spread_ratio: Some(a_spread_ratio),
                 ma_short: Some(sma_short),
                 ma_long: Some(sma_long),
                 ma_win_rate: None,
-                reason: Some(reason) 
+                reason: Some("スプレッド負け".to_string()) 
             });
         }
     
@@ -113,6 +110,8 @@ impl Strategy for BasicStrategy {
                     // 0.0の仮値をセット。
                     // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
                     Ok(TradeSignal::MarcketBuy { 
+                        spread_threshold: Some(a_spread_threshold),
+                        spread_ratio: Some(a_spread_ratio),
                         ma_short: Some(sma_short),
                         ma_long: Some(sma_long),
                         ma_win_rate: None,
@@ -124,6 +123,8 @@ impl Strategy for BasicStrategy {
                     // こちらは仮想通貨毎に売る量を決定できるので、ここでセット
                     let amount = crypto_balance * sell_ratio;
                     Ok(TradeSignal::MarcketSell { 
+                        spread_threshold: Some(a_spread_threshold),
+                        spread_ratio: Some(a_spread_ratio),
                         ma_short: Some(sma_short),
                         ma_long: Some(sma_long),
                         ma_win_rate: None,
@@ -137,6 +138,8 @@ impl Strategy for BasicStrategy {
                         ma_short_avg, 
                         ma_long_avg);
                     Ok(TradeSignal::Hold { 
+                        spread_threshold: Some(a_spread_threshold),
+                        spread_ratio: Some(a_spread_ratio),
                         ma_short: Some(sma_short),
                         ma_long: Some(sma_long),
                         ma_win_rate: None,
@@ -145,6 +148,8 @@ impl Strategy for BasicStrategy {
                 }
             }
             _ => Ok(TradeSignal::InsufficientData { 
+                spread_threshold: None,
+                spread_ratio: None,
                 ma_short: None,
                 ma_long: None,
                 ma_win_rate: None,

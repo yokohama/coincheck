@@ -60,14 +60,11 @@ impl Strategy for MaOptimizerStrategy {
         let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, currency)? {
             Some((short, long, win_rate)) if win_rate >= ma_border_threshold_ratio => (short, long, win_rate),
             Some((short, long, win_rate)) => {
-                let reason = format!(
-                    "クロスの勝率低い({}%以下)ので見送り: short={}, long={}, win_rate={}", 
-                    ma_border_threshold_ratio,
-                    short, 
-                    long, 
-                    win_rate);
+                let reason = format!("クロスの勝率低い({}%以下)ので見送り", ma_border_threshold_ratio);
                 return Ok(
                     TradeSignal::Hold { 
+                        spread_threshold: None,
+                        spread_ratio: None,
                         ma_short: Some(short),
                         ma_long: Some(long),
                         ma_win_rate: Some(win_rate),
@@ -75,6 +72,8 @@ impl Strategy for MaOptimizerStrategy {
                     });
             },
             None => return Ok(TradeSignal::Hold { 
+                spread_threshold: None,
+                spread_ratio: None,
                 ma_short: None,
                 ma_long: None,
                 ma_win_rate: None,
@@ -109,18 +108,16 @@ impl Strategy for MaOptimizerStrategy {
         let ma_short_avg = results[0].as_ref().map(|r| r.avg).flatten();
         let ma_long_avg = results[1].as_ref().map(|r| r.avg).flatten();
     
-        let spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
-        let spread_threshold = models::ticker::get_dynamic_spread_threshold(conn, currency).await?;
-        if spread_ratio > spread_threshold {
-            let reason = format!(
-                "スプレッド負け: spread_ratio={} spread_threshold={}", 
-                spread_ratio, 
-                spread_threshold);
+        let a_spread_ratio = ((current_ask - current_bid) / current_bid) * 100.0;
+        let a_spread_threshold = models::ticker::get_dynamic_spread_threshold(conn, currency).await?;
+        if a_spread_ratio > a_spread_threshold {
             return Ok(TradeSignal::Hold { 
+                spread_threshold: Some(a_spread_threshold),
+                spread_ratio: Some(a_spread_ratio),
                 ma_short: Some(sma_short),
                 ma_long: Some(sma_long),
                 ma_win_rate: Some(win_rate_pct),
-                reason: Some(reason) 
+                reason: Some("スプレッド負け".to_string()) 
             });
         }
     
@@ -131,6 +128,8 @@ impl Strategy for MaOptimizerStrategy {
                     // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
                     let reason = format!("jpy_amount分{}を購入", currency);
                     Ok(TradeSignal::MarcketBuy { 
+                        spread_threshold: Some(a_spread_threshold),
+                        spread_ratio: Some(a_spread_ratio),
                         ma_short: Some(sma_short),
                         ma_long: Some(sma_long),
                         ma_win_rate: Some(win_rate_pct),
@@ -146,6 +145,8 @@ impl Strategy for MaOptimizerStrategy {
                     if amount < 0.001 {
                         let reason = format!("最低売却量未満: {}", amount);
                         return Ok(TradeSignal::Hold { 
+                            spread_threshold: Some(a_spread_threshold),
+                            spread_ratio: Some(a_spread_ratio),
                             ma_short: Some(sma_short),
                             ma_long: Some(sma_long),
                             ma_win_rate: Some(win_rate_pct),
@@ -154,6 +155,8 @@ impl Strategy for MaOptimizerStrategy {
                     }
                     let reason = format!("{}{}を売却", amount, currency);
                     Ok(TradeSignal::MarcketSell { 
+                        spread_threshold: Some(a_spread_threshold),
+                        spread_ratio: Some(a_spread_ratio),
                         ma_short: Some(sma_short),
                         ma_long: Some(sma_long),
                         ma_win_rate: Some(win_rate_pct),
@@ -166,14 +169,18 @@ impl Strategy for MaOptimizerStrategy {
                         ma_short_avg, 
                         ma_long_avg);
                     Ok(TradeSignal::Hold { 
+                        spread_threshold: Some(a_spread_threshold),
+                        spread_ratio: Some(a_spread_ratio),
                         ma_short: Some(sma_short),
                         ma_long: Some(sma_long),
                         ma_win_rate: Some(win_rate_pct),
                         reason: Some(reason) 
                     })
                 }
-            }
+            },
             _ => Ok(TradeSignal::InsufficientData { 
+                spread_threshold: None,
+                spread_ratio: None,
                 ma_short: None,
                 ma_long: None,
                 ma_win_rate: None,
