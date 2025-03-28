@@ -66,6 +66,14 @@ pub async fn my_balancies(client: &CoincheckClient) -> Result<Value, AppError> {
     Ok(Value::Object(my_balancies))
 }
 
+pub fn my_managed_balancies(balancies: &serde_json::Value) -> Result<Value, AppError> {
+    let mut my_managed_balancies = balancies.clone();
+    if let Some(obj) = my_managed_balancies.as_object_mut() {
+        obj.retain(|key, _| !key.contains("tsumitate"));
+    }
+    Ok(my_managed_balancies)
+}
+
 pub fn get_jpy_balance(balancies: &Value) -> Result<f64, AppError> {
     if let Some(jpy) = balancies.get("jpy") {
         Ok(jpy.as_f64().unwrap_or(0.0))

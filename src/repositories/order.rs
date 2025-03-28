@@ -34,13 +34,14 @@ pub async fn post_market_order(
     client: &coincheck::client::CoincheckClient,
 ) -> Result<(), AppError> {
     let balancies = repositories::balance::my_balancies(&client).await?;
+    let my_managed_balanies = repositories::balance::my_managed_balancies(&balancies);
     let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
     let jpy_balance = repositories::balance::get_jpy_balance(&balancies)?;
 
     info!("#");
     info!("# オーダー情報");
     info!("#");
-    info!("balance: {:#?}", balancies);
+    info!("balance: {:#?}", my_managed_balanies);
     println!("");
 
     let mut new_orders: Vec<models::order::NewOrder> = Vec::new();
