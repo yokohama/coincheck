@@ -86,11 +86,6 @@ pub async fn post_market_order(
             continue;
         };
 
-        info!("{}", new_order.order_type);
-        info!("{}", new_order.order_type);
-        info!("{}", new_order.order_type);
-        info!("{}", new_order.order_type);
-
         let mut orderd = coincheck::order::post_market_order(client, &mut new_order, amount).await?;
 
         if orderd.api_call_success_at.is_some() {
