@@ -2,6 +2,7 @@ use std::env;
 use log::{info, error};
 
 use diesel::prelude::*;
+use serde_json::Value;
 
 use crate::{
     api::{coincheck, slack}, 
@@ -13,64 +14,38 @@ use crate::{
 use crate::strategies::strategy_trait::Strategy;
 use crate::strategies::ma_optimizer::MaOptimizerStrategy;
 
-/*
- * [cron]
- * 2分毎に、cargo run --bin ticker_fetcherを実行して、tickersに情報を蓄積
- * 30毎に、cargo run --bin orderを実行して、注文
- * 
- * [envの設定]
- * MA_SHORT=10
- * MA_LONG=30
- * BUY_THRESHOLD_1=20000
- * BUY_RATIO_1=0.9
- * BUY_THRESHOLD_2=50000
- * BUY_RATIO_2=0.7
- * BUY_THRESHOLD_3=150000
- * BUY_RATIO_3=0.5
- * SELL_RATIO=0.4
- */
-
 #[allow(dead_code)]
 pub async fn post_market_order(
     conn: &mut PgConnection,
     client: &coincheck::client::CoincheckClient,
 ) -> Result<(), AppError> {
-    let balancies = repositories::balance::my_balancies(&client).await?;
-    let my_managed_balanies = repositories::balance::my_managed_balancies(&balancies);
-    let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
-    let jpy_balance = repositories::balance::get_jpy_balance(&balancies)?;
 
-    info!("#");
-    info!("# オーダー情報");
-    info!("#");
-    info!("balance: {:#?}", my_managed_balanies.unwrap());
-    println!("");
+    // ストラテジーの切替え
+    let strategy = MaOptimizerStrategy;
+
+    // 全体の資産情報の取得
+    let Some((balances, my_managed_balances, my_trading_currency, jpy_balance)) = 
+        fetch_balances(client).await? else {
+        return Err(AppError::InvalidData("事前の資産情報が見つかりませんでした。".to_string()));
+    };
+
+    print_log_header(my_managed_balances);
 
     // new_ordersに、通過毎のオーダーの内容をプッシュしてまとめていく
     let mut new_orders: Vec<models::order::NewOrder> = Vec::new();
 
-    // 通過毎のオーダーの作成と、new_ordersにプッシュ
+    // 通貨毎のオーダーの作成と、new_ordersにプッシュ
     for currency in my_trading_currency.iter() {
 
-        let ticker = match coincheck::ticker::find(&client, &currency).await {
-            Ok(ticker) => ticker,
-            Err(e) => {
-                error!("#- [{}] ticker取得失敗: api非対応通貨の可能性: {}", currency, e);
-                continue;
-            }
-        };
-
-        let crypto_balance = match repositories::balance::get_crypto_balance(&balancies, currency) {
-            Ok(b) => b,
-            Err(_) => {
-                error!("#- [{}] balance取得失敗: データ不足", currency);
-                continue;
-            }
+        // 通貨情報の取得
+        let Some((ticker, crypto_balance)) = 
+            fetch_ticker_and_crypto_balance(client, currency, &balances).await? else {
+            continue;
         };
 
         let mut new_order = models::order::NewOrder::new(currency.clone());
 
-        let strategy = MaOptimizerStrategy;
+        // 戦略に合わせて、通貨毎に注文内容を決定して、new_owdersにプッシュ
         match strategy.determine_trade_signal(
             conn,
             currency,
@@ -89,7 +64,7 @@ pub async fn post_market_order(
         };
     };
 
-    // 購入と判断した通貨毎に使えるJPYを等分
+    // 購入と判断した注文数で、使えるJPYを等分
     let jpy_amount_per_currency = get_buy_ratio(jpy_balance, new_orders.len() as i32)?;
 
     // 売りが先にくるようにソート
@@ -128,8 +103,52 @@ pub async fn post_market_order(
         models::order::Order::create(conn, &orderd)?;
     }
 
-    make_summary(success_order_count, conn, client).await?;
+    if success_order_count > 0 { make_summary(conn, client).await?; }
+
     Ok(())
+}
+
+fn print_log_header(my_managed_balances: Value) {
+    info!("#");
+    info!("# オーダー情報");
+    info!("#");
+    info!("balance: {:#?}", my_managed_balances);
+    println!("");
+}
+
+async fn fetch_balances(
+    client: &coincheck::client::CoincheckClient
+) -> Result<Option<(Value, Value, Vec<String>, f64)>, AppError> {
+    let balances = repositories::balance::my_balancies(&client).await?;
+    let my_managed_balances = repositories::balance::my_managed_balancies(&balances)?;
+    let my_trading_currency = repositories::balance::my_trading_currencies(&client).await?;
+    let jpy_balance = repositories::balance::get_jpy_balance(&balances)?;
+
+    Ok(Some((balances, my_managed_balances, my_trading_currency, jpy_balance)))
+}
+
+async fn fetch_ticker_and_crypto_balance(
+    client: &coincheck::client::CoincheckClient,
+    currency: &str,
+    balances: &Value,
+) -> Result<Option<(models::ticker::NewTicker, f64)>, AppError> {
+    let ticker = match coincheck::ticker::find(client, currency).await {
+        Ok(t) => t,
+        Err(e) => {
+            error!("#- [{}] ticker取得失敗: api非対応通貨の可能性: {}", currency, e);
+            return Ok(None);
+        }
+    };
+
+    let crypto_balance = match repositories::balance::get_crypto_balance(balances, currency) {
+        Ok(b) => b,
+        Err(_) => {
+            error!("");
+            return Ok(None);
+        }
+    };
+
+    Ok(Some((ticker, crypto_balance)))
 }
 
 fn print_log(new_order: &NewOrder) {
@@ -142,17 +161,12 @@ fn print_log(new_order: &NewOrder) {
 }
 
 async fn make_summary(
-    success_order_count: u32,
     conn: &mut PgConnection, 
     client: &coincheck::client::CoincheckClient
 ) -> Result<(), AppError> {
-    if success_order_count > 0 {
-        let mut report = repositories::summary::make_report(conn, &client).await?;
-        models::summary::Summary::create(conn, &report.summary, &mut report.summary_records)?;
-        slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
-    } else {
-        info!("summary: オーダーなし");
-    }
+    let mut report = repositories::summary::make_report(conn, &client).await?;
+    models::summary::Summary::create(conn, &report.summary, &mut report.summary_records)?;
+    slack::send_summary("直近レポート", &report.summary, report.summary_records).await?;
 
     Ok(())
 }
