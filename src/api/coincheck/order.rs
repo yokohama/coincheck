@@ -31,11 +31,6 @@ pub enum MarketOrderRequest {
 
 pub async fn post_market_order(
     coincheck_client: &client::CoincheckClient,
-    /*
-    currency: &str,
-    order_type: &str,
-    amount: f64,
-    */
     new_order: &mut NewOrder,
     amount: f64,
 ) -> Result<NewOrder, AppError> {
@@ -69,12 +64,12 @@ pub async fn post_market_order(
     let status = res.status();
     let body: Value = res.json().await?;
 
-    new_order.api_call_success_at = Some(Utc::now().naive_utc());
     let comment = format!("{}, [{}]: {}", new_order.comment.take().unwrap(), status, body);
     new_order.comment = Some(comment);
 
     if status.is_success() {
         info!("Status {}: {}", status, body);
+        new_order.api_call_success_at = Some(Utc::now().naive_utc());
     } else {
         error!("Status {}: {}", status, body);
     }
