@@ -63,7 +63,7 @@ impl Strategy for MaOptimizerStrategy {
         let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, currency)? {
             Some((short, long, win_rate)) if win_rate >= ma_border_threshold_ratio => (short, long, win_rate),
             Some((short, long, win_rate)) => {
-                let reason = format!("クロスの勝率:{}% < {}%なので見送り", win_rate, ma_border_threshold_ratio);
+                let reason = format!("クロスの勝率:[{}% < {}%]、見送り", win_rate, ma_border_threshold_ratio);
                 return Ok(
                     TradeSignal::Hold { 
                         spread_threshold: None,
