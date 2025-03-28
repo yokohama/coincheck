@@ -67,17 +67,6 @@ pub async fn post_market_order(
     let comment = format!("{}, [{}]: {}", new_order.comment.take().unwrap(), status, body);
     new_order.comment = Some(comment);
 
-    info!("#");
-    info!("#");
-    info!("#");
-    info!("#");
-    info!("#");
-    info!("#");
-    info!("#");
-    info!("#");
-    info!("#");
-    info!("#");
-
     if status.is_success() {
         info!("Status {}: {}", status, body);
         new_order.api_call_success_at = Some(Utc::now().naive_utc());
