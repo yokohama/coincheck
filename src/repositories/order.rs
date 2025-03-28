@@ -115,21 +115,21 @@ pub async fn post_market_order(
             continue;
         };
 
-        let mut api_called_order = coincheck::order::post_market_order(client, &mut new_order, amount).await?;
+        let mut orderd = coincheck::order::post_market_order(client, &mut new_order, amount).await?;
 
-        if api_called_order.api_call_success_at.is_some() {
-            slack::send_orderd_information(&api_called_order).await?;
+        if orderd.api_call_success_at.is_some() {
+            slack::send_orderd_information(&orderd).await?;
 
-            let orderd_rate = coincheck::rate::find(client, api_called_order.pair.as_str()).await?;
-            api_called_order.buy_rate = Some(orderd_rate.buy_rate);
-            api_called_order.sell_rate = Some(orderd_rate.sell_rate);
-            api_called_order.spread_ratio = Some(orderd_rate.spread_ratio);
+            let orderd_rate = coincheck::rate::find(client, orderd.pair.as_str()).await?;
+            orderd.buy_rate = Some(orderd_rate.buy_rate);
+            orderd.sell_rate = Some(orderd_rate.sell_rate);
+            orderd.spread_ratio = Some(orderd_rate.spread_ratio);
 
             success_order_count += 1;
         }
 
-        print_log(&new_order);
-        models::order::Order::create(conn, &new_order)?;
+        print_log(&orderd);
+        models::order::Order::create(conn, &orderd)?;
     }
 
     make_summary(success_order_count, conn, client).await?;
