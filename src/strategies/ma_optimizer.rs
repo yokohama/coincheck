@@ -1,6 +1,5 @@
 use std::env;
 use dotenvy::dotenv;
-use log::info;
 
 use async_trait::async_trait;
 
@@ -67,12 +66,21 @@ impl Strategy for MaOptimizerStrategy {
                     short, 
                     long, 
                     win_rate);
-                return Ok(TradeSignal::Hold { reason: Some(reason) });
+                return Ok(
+                    TradeSignal::Hold { 
+                        ma_short: Some(short),
+                        ma_long: Some(long),
+                        ma_win_rate: Some(win_rate),
+                        reason: Some(reason) 
+                    });
             },
-            None => return Ok(TradeSignal::Hold { reason: Some("ベストなmaなし".to_string()) }),
+            None => return Ok(TradeSignal::Hold { 
+                ma_short: None,
+                ma_long: None,
+                ma_win_rate: None,
+                reason: Some("ベストなmaなし".to_string()) 
+            }),
         };
-
-        info!("#- crossover: short={}, long={}, win_rate={}", sma_short, sma_long, win_rate_pct);
 
         let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>().unwrap();
     
@@ -108,7 +116,12 @@ impl Strategy for MaOptimizerStrategy {
                 "スプレッド負け: spread_ratio={} spread_threshold={}", 
                 spread_ratio, 
                 spread_threshold);
-            return Ok(TradeSignal::Hold { reason: Some(reason) });
+            return Ok(TradeSignal::Hold { 
+                ma_short: Some(sma_short),
+                ma_long: Some(sma_long),
+                ma_win_rate: Some(win_rate_pct),
+                reason: Some(reason) 
+            });
         }
     
         match (ma_short_avg, ma_long_avg) {
@@ -117,7 +130,13 @@ impl Strategy for MaOptimizerStrategy {
                     // ゴールデンクロス(0.0の仮値をセット)
                     // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
                     let reason = format!("jpy_amount分{}を購入", currency);
-                    Ok(TradeSignal::MarcketBuy { amount: 0.0, reason: Some(reason) })
+                    Ok(TradeSignal::MarcketBuy { 
+                        ma_short: Some(sma_short),
+                        ma_long: Some(sma_long),
+                        ma_win_rate: Some(win_rate_pct),
+                        amount: 0.0, 
+                        reason: Some(reason) 
+                    })
     
                 } else if short_avg < long_avg {
                     // デッドクロス
@@ -126,20 +145,40 @@ impl Strategy for MaOptimizerStrategy {
                     let amount = crypto_balance * sell_ratio;
                     if amount < 0.001 {
                         let reason = format!("最低売却量未満: {}", amount);
-                        return Ok(TradeSignal::Hold { reason: Some(reason) })
+                        return Ok(TradeSignal::Hold { 
+                            ma_short: Some(sma_short),
+                            ma_long: Some(sma_long),
+                            ma_win_rate: Some(win_rate_pct),
+                            reason: Some(reason) 
+                        })
                     }
                     let reason = format!("{}{}を売却", amount, currency);
-                    Ok(TradeSignal::MarcketSell { amount, reason: Some(reason) })
+                    Ok(TradeSignal::MarcketSell { 
+                        ma_short: Some(sma_short),
+                        ma_long: Some(sma_long),
+                        ma_win_rate: Some(win_rate_pct),
+                        amount, reason: Some(reason) 
+                    })
     
                 } else {
                     let reason = format!(
                         "こんなことあるのか？: short_avg={:#?} long_avg={:#?}", 
                         ma_short_avg, 
                         ma_long_avg);
-                    Ok(TradeSignal::Hold { reason: Some(reason) })
+                    Ok(TradeSignal::Hold { 
+                        ma_short: Some(sma_short),
+                        ma_long: Some(sma_long),
+                        ma_win_rate: Some(win_rate_pct),
+                        reason: Some(reason) 
+                    })
                 }
             }
-            _ => Ok(TradeSignal::InsufficientData { reason: Some("データ不足".to_string()) })
+            _ => Ok(TradeSignal::InsufficientData { 
+                ma_short: None,
+                ma_long: None,
+                ma_win_rate: None,
+                reason: Some("データ不足".to_string()) 
+            })
         }
     }
 }

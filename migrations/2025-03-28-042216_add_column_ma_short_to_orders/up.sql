@@ -1,0 +1,3 @@
+ALTER TABLE orders ADD COLUMN ma_short INTEGER;
+ALTER TABLE orders ADD COLUMN ma_long INTEGER;
+ALTER TABLE orders ADD COLUMN ma_win_rate FLOAT8;

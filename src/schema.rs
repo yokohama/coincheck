@@ -31,6 +31,9 @@ diesel::table! {
         comment -> Nullable<Text>,
         spread_threshold -> Nullable<Float8>,
         api_call_success_at -> Nullable<Timestamp>,
+        ma_short -> Nullable<Int4>,
+        ma_long -> Nullable<Int4>,
+        ma_win_rate -> Nullable<Float8>,
     }
 }
 

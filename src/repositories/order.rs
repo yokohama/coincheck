@@ -73,14 +73,49 @@ pub async fn post_market_order(
             crypto_balance,
         ).await {
             Ok(signal) => {
-                let (order_type, jpy_amount, crypto_amount, comment) = match signal {
-                    TradeSignal::MarcketBuy { amount, reason } => ("market_buy", amount, 0.0, reason.clone()),
-                    TradeSignal::MarcketSell { amount, reason } => ("market_sell", 0.0, amount, reason.clone()),
-                    TradeSignal::Hold { reason } => ("hold", 0.0, 0.0, reason.clone()),
-                    TradeSignal::InsufficientData { reason } => ("insufficient_data", 0.0, 0.0, reason.clone()),
+                let (order_type, ma_short, ma_long, ma_win_rate, jpy_amount, crypto_amount, comment) = match signal {
+                    TradeSignal::MarcketBuy { ma_short, ma_long, ma_win_rate, amount, reason } => (
+                        "market_buy",
+                        ma_short,
+                        ma_long,
+                        ma_win_rate,
+                        amount,
+                        0.0,
+                        reason.clone()
+                    ),
+                    TradeSignal::MarcketSell { ma_short, ma_long, ma_win_rate, amount, reason } => (
+                        "market_sell",
+                        ma_short,
+                        ma_long,
+                        ma_win_rate,
+                        0.0,
+                        amount,
+                        reason.clone()
+                    ),
+                    TradeSignal::Hold { ma_short, ma_long, ma_win_rate, reason } => (
+                        "hold",
+                        ma_short,
+                        ma_long,
+                        ma_win_rate,
+                        0.0,
+                        0.0,
+                        reason.clone()
+                    ),
+                    TradeSignal::InsufficientData { ma_short, ma_long, ma_win_rate, reason } => (
+                        "insufficient_data",
+                        ma_short,
+                        ma_long,
+                        ma_win_rate,
+                        0.0,
+                        0.0,
+                        reason.clone()
+                    ),
                 };
 
                 new_order.order_type = order_type.to_string();
+                new_order.ma_short = ma_short;
+                new_order.ma_long = ma_long;
+                new_order.ma_win_rate = ma_win_rate;
                 new_order.jpy_amount = jpy_amount;
                 new_order.crypto_amount = crypto_amount;
                 new_order.comment = comment;

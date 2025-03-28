@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use diesel::prelude::*;
 use diesel::sql_types::{Nullable, Double, Text, Integer};
 
+use crate::schema::optimized_mas::win_rate_pct;
 use crate::{
     models,
     error::AppError,
@@ -62,7 +63,7 @@ impl Strategy for BasicStrategy {
     
         let sma_long = env::var("MA_LONG")?.parse::<i32>()
             .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
-    
+
         let sell_ratio = env::var("SELL_RATIO")?.parse::<f64>().unwrap();
     
         let periods = vec![sma_short, sma_long];
@@ -97,7 +98,12 @@ impl Strategy for BasicStrategy {
                 "スプレッド負け: spread_ratio={} spread_threshold={}", 
                 spread_ratio, 
                 spread_threshold);
-            return Ok(TradeSignal::Hold { reason: Some(reason) });
+            return Ok(TradeSignal::Hold { 
+                ma_short: Some(sma_short),
+                ma_long: Some(sma_long),
+                ma_win_rate: None,
+                reason: Some(reason) 
+            });
         }
     
         match (ma_short_avg, ma_long_avg) {
@@ -106,23 +112,44 @@ impl Strategy for BasicStrategy {
                     // ゴールデンクロス
                     // 0.0の仮値をセット。
                     // すべてjpyで購入なので、呼び出し元で他購入通貨とのバランスを計算して再セットする。
-                    Ok(TradeSignal::MarcketBuy { amount: 0.0, reason: None })
+                    Ok(TradeSignal::MarcketBuy { 
+                        ma_short: Some(sma_short),
+                        ma_long: Some(sma_long),
+                        ma_win_rate: None,
+                        amount: 0.0, reason: None 
+                    })
     
                 } else if short_avg < long_avg {
                     // デッドクロス
                     // こちらは仮想通貨毎に売る量を決定できるので、ここでセット
                     let amount = crypto_balance * sell_ratio;
-                    Ok(TradeSignal::MarcketSell { amount, reason: None })
+                    Ok(TradeSignal::MarcketSell { 
+                        ma_short: Some(sma_short),
+                        ma_long: Some(sma_long),
+                        ma_win_rate: None,
+                        amount, 
+                        reason: None 
+                    })
     
                 } else {
                     let reason = format!(
                         "こんなことあるのか？: short_avg={:#?} long_avg={:#?}", 
                         ma_short_avg, 
                         ma_long_avg);
-                    Ok(TradeSignal::Hold { reason: Some(reason) })
+                    Ok(TradeSignal::Hold { 
+                        ma_short: Some(sma_short),
+                        ma_long: Some(sma_long),
+                        ma_win_rate: None,
+                        reason: Some(reason) 
+                    })
                 }
             }
-            _ => Ok(TradeSignal::InsufficientData { reason: Some("データ不足".to_string()) })
+            _ => Ok(TradeSignal::InsufficientData { 
+                ma_short: None,
+                ma_long: None,
+                ma_win_rate: None,
+                reason: Some("データ不足".to_string()) 
+            })
         }
     }
 }
