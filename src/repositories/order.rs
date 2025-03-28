@@ -4,10 +4,12 @@ use log::{info, error};
 use diesel::prelude::*;
 
 use crate::{
-    api::{coincheck, slack}, error::AppError, models::{self, order::NewOrder}, repositories
+    api::{coincheck, slack}, 
+    error::AppError, 
+    models::{self, order::NewOrder}, 
+    repositories
 };
 
-use crate::strategies::trade_signal::TradeSignal;
 use crate::strategies::strategy_trait::Strategy;
 use crate::strategies::ma_optimizer::MaOptimizerStrategy;
 
@@ -44,8 +46,12 @@ pub async fn post_market_order(
     info!("balance: {:#?}", my_managed_balanies.unwrap());
     println!("");
 
+    // new_ordersに、通過毎のオーダーの内容をプッシュしてまとめていく
     let mut new_orders: Vec<models::order::NewOrder> = Vec::new();
+
+    // 通過毎のオーダーの作成と、new_ordersにプッシュ
     for currency in my_trading_currency.iter() {
+
         let ticker = match coincheck::ticker::find(&client, &currency).await {
             Ok(ticker) => ticker,
             Err(e) => {
@@ -73,63 +79,7 @@ pub async fn post_market_order(
             crypto_balance,
         ).await {
             Ok(signal) => {
-                let (order_type, spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, jpy_amount, crypto_amount, comment) = match signal {
-                    TradeSignal::MarcketBuy { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, amount, reason } => (
-                        "market_buy",
-                        spread_threshold,
-                        spread_ratio,
-                        ma_short,
-                        ma_long,
-                        ma_win_rate,
-                        amount,
-                        0.0,
-                        reason.clone()
-                    ),
-                    TradeSignal::MarcketSell { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, amount, reason } => (
-                        "market_sell",
-                        spread_threshold,
-                        spread_ratio,
-                        ma_short,
-                        ma_long,
-                        ma_win_rate,
-                        0.0,
-                        amount,
-                        reason.clone()
-                    ),
-                    TradeSignal::Hold { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, reason } => (
-                        "hold",
-                        spread_threshold,
-                        spread_ratio,
-                        ma_short,
-                        ma_long,
-                        ma_win_rate,
-                        0.0,
-                        0.0,
-                        reason.clone()
-                    ),
-                    TradeSignal::InsufficientData { spread_threshold, spread_ratio, ma_short, ma_long, ma_win_rate, reason } => (
-                        "insufficient_data",
-                        spread_threshold,
-                        spread_ratio,
-                        ma_short,
-                        ma_long,
-                        ma_win_rate,
-                        0.0,
-                        0.0,
-                        reason.clone()
-                    ),
-                };
-
-                new_order.order_type = order_type.to_string();
-                new_order.spread_threshold = spread_threshold;
-                new_order.spread_ratio = spread_ratio;
-                new_order.ma_short = ma_short;
-                new_order.ma_long = ma_long;
-                new_order.ma_win_rate = ma_win_rate;
-                new_order.jpy_amount = jpy_amount;
-                new_order.crypto_amount = crypto_amount;
-                new_order.comment = comment;
-
+                signal.apply_to(&mut new_order);
                 new_orders.push(new_order);
             },
             Err(e) => {
