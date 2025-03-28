@@ -41,7 +41,7 @@ pub async fn post_market_order(
     info!("#");
     info!("# オーダー情報");
     info!("#");
-    info!("balance: {:#?}", my_managed_balanies);
+    info!("balance: {:#?}", my_managed_balanies.unwrap());
     println!("");
 
     let mut new_orders: Vec<models::order::NewOrder> = Vec::new();
