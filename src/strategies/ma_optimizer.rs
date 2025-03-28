@@ -55,8 +55,11 @@ impl Strategy for MaOptimizerStrategy {
     ) -> Result<TradeSignal, AppError> {
         dotenv().ok();
 
-        //TODO: 60.0ハードコーディング
-        let ma_border_threshold_ratio = 60.0;
+        let ma_border_threshold_ratio = env::var("MA_BORDER_THRESHOLD_RATIO")
+            .unwrap_or("60.0".to_string())
+            .parse::<f64>()
+            .map_err(|e| AppError::InvalidData(format!("Parse error: {}", e)))?;
+
         let (sma_short, sma_long, win_rate_pct) = match models::optimized_ma::OptimizedMa::find_best_for_ma(conn, currency)? {
             Some((short, long, win_rate)) if win_rate >= ma_border_threshold_ratio => (short, long, win_rate),
             Some((short, long, win_rate)) => {
